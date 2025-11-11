@@ -31,13 +31,13 @@ docker run -d   -p 8082:8082   -v $(pwd)/data:/data   -v $(pwd)/logs:/logs   -v 
 Or using **Docker Compose**:
 
 ```bash
-git clone https://github.com/<yourusername>/frigate-backup-manager.git
+git clone https://github.com/shepc260/frigate-backup-manager.git
 cd frigate-backup-manager
 docker compose pull
 docker compose up -d
 ```
 
-Then visit **http://[<your-host>]:8082** for the dashboard.
+Then visit **http://your-host-ip:8082** for the dashboard.
 
 ---
 
@@ -72,7 +72,7 @@ Then visit **http://[<your-host>]:8082** for the dashboard.
 
 ### Default URL
 ```
-http://<IP ADDRESS>:8082
+http://your-host-ip:8082
 ```
 
 **Main sections:**
@@ -111,4 +111,4 @@ docker compose down
 ---
 
 ## 📜 License
-MIT License © 2025 ShephC260
+MIT License © 2025 ShephC260@ShepSecureHub.uk
