@@ -1,6 +1,6 @@
 # 🧰 Frigate Backup Manager
 
-A lightweight, self-contained management tool for **Frigate NVR** systems.  
+A lightweight, self-contained management tool for **Frigate NVR** systems running in Docker on Debian.  
 It provides automatic configuration backups, Google Drive sync, OS and Frigate updates, and driver management — all from a simple web UI.
 
 ---
