@@ -37,7 +37,7 @@ docker compose pull
 docker compose up -d
 ```
 
-Then visit **http://<your-host>:8082** for the dashboard.
+Then visit **http://[<your-host>]:8082** for the dashboard.
 
 ---
 
