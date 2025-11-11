@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+apscheduler
+cron-descriptor
+google-api-python-client
+google-auth
+google-auth-httplib2
+google-auth-oauthlib
+jinja2

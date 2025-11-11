@@ -1,0 +1,40 @@
+# ================================
+# Frigate Backup Manager
+# Docker build ignore list
+# ================================
+
+# Local runtime data
+data/
+logs/
+backups/
+
+# Credentials and tokens
+drive_token.json
+*.json
+
+# Python cache and build files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# OS / editor metadata
+.DS_Store
+.vscode/
+.idea/
+
+# Docker and environment files
+.env
+*.tar
+
+# Git files
+.git/
+.gitignore
+.github/
+
+# Temporary files
+*.tmp
+*.log
+*.bak
+*.swp
