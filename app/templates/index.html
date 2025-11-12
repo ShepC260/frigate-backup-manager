@@ -1,385 +1,200 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Frigate Backup Manager</title>
   <style>
-    body { font-family: system-ui, sans-serif; background:#111; color:#eee; margin:0; padding:2rem; }
-    h1 { color:#18b09f; }
-    table { width:100%; border-collapse:collapse; margin-top:1rem; }
-    th,td { padding:0.6rem 1rem; border-bottom:1px solid #333; text-align:left; }
-    button { background:#18b09f; border:none; padding:0.5rem 1rem; border-radius:6px; color:#fff; cursor:pointer; }
-    button:hover { background:#0d7d6d; }
-    .card { background:#1b1b1b; padding:1.5rem; border-radius:12px; box-shadow:0 2px 8px #0004; margin-bottom:1rem; }
-    footer { font-size:0.9em; color:#777; margin-top:2rem; text-align:center; }
-    #statusLog {
-      background: #000;
-      color: #ccc;
+    body {
+      background: #101010;
+      color: #f0f0f0;
+      font-family: system-ui, sans-serif;
+      margin: 0;
       padding: 1rem;
-      height: 300px;
-      overflow-y: auto;
-      border-radius: 8px;
-      font-family: monospace;
-      white-space: pre-wrap;
-      scroll-behavior: smooth;
     }
-    select, option, input[type=text] {
-      background:#222;
-      color:#eee;
-      border-radius:6px;
-      padding:0.3rem 0.5rem;
-      border:1px solid #444;
+    h1 { color: #18b09f; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1rem;
     }
+    .card {
+      background: #181818;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 0 10px #000a;
+    }
+    button {
+      background: #18b09f;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      padding: 0.4rem 0.8rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    button:hover { background: #14a095; }
+    select, input {
+      background: #202020;
+      color: #fff;
+      border: 1px solid #444;
+      border-radius: 6px;
+      padding: 0.3rem;
+    }
+    .status {
+      margin-top: 0.5rem;
+      font-size: 0.9em;
+      color: #aaa;
+    }
+    .error { color: #ff5555; }
   </style>
 </head>
 <body>
-  <h1>Frigate Backup Manager</h1>
+  <h1>🧰 Frigate Backup Manager</h1>
+  <div class="grid">
 
-  <!-- STATUS BAR -->
-  <div id="statusBar" class="card" style="
-    display:flex;
-    flex-direction:column;
-    gap:0.5rem;
-    background:#181818;
-    border:1px solid #333;
-    position: relative;
-  ">
-    <div style="display:flex;justify-content:space-between;">
-      <div><b>Last Backup:</b> <span id="lastBackup">(loading)</span></div>
-      <div><b>Last Update Check:</b> <span id="lastUpdate">(loading)</span></div>
-      <div><b>Last Log Rotation:</b> <span id="lastRotation">(loading)</span></div>
+    <div class="card">
+      <h2>System Status</h2>
+      <pre id="systemStatus">Loading...</pre>
+      <div class="status" id="statusTime"></div>
     </div>
-    <hr style="border:0;border-top:1px solid #333;">
-    <div style="display:flex;justify-content:space-between;">
-      <div><b>OS:</b> <span id="osVersion">(loading)</span></div>
-      <div><b>Frigate:</b> <span id="frigateVersion">(loading)</span></div>
-      <div><b>Coral TPU:</b> <span id="coralStatus">(loading)</span></div>
-    </div>
-    <div style="display:flex;justify-content:flex-end;gap:0.8rem;align-items:center;">
-      <div>
-        <b>Drive Sync:</b>
-        <span id="driveIndicator"
-          style="font-weight:bold; cursor:help;"
-          title="Checking Drive status..."
-        >(checking...)</span>
-      </div>
-    </div>
-  </div>
 
-  <!-- GOOGLE DRIVE SYNC -->
-  <div class="card" id="gdriveCard">
-    <h2>Google Drive Sync</h2>
-    <div id="gdriveWarning" style="
-      display:none;
-      background:#330000;
-      color:#ff7777;
-      border:1px solid #ff4444;
-      padding:0.5rem 1rem;
-      border-radius:8px;
-      margin-bottom:0.8rem;
-      font-weight:bold;
-    ">
-      ⚠️ Google Drive token not found or invalid — backups will not be uploaded.
-    </div>
-    <div style="display:flex;flex-direction:column;gap:0.5rem;">
-      <label>
-        Token file path:
-        <input id="gdriveTokenPath" style="width:100%;" placeholder="/data/drive_token.json">
-      </label>
-      <label>
-        <input type="checkbox" id="gdriveToggle"> Enable Google Drive Sync
-      </label>
-      <button onclick="updateGDriveSettings()">Save Settings</button>
-    </div>
-    <p id="gdriveStatus" style="margin-top:1rem;font-size:0.9em;color:#aaa;"></p>
-  </div>
-
-  <!-- RESTORE BACKUP -->
-  <div class="card">
-    <h2>Restore Backup</h2>
-    <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center;">
-      <label>
-        Source:
-        <select id="restoreSource">
-          <option value="local">Local</option>
-          <option value="gdrive">Google Drive</option>
-        </select>
-      </label>
-      <label>
-        Backup file:
-        <select id="restoreFile">
-          <option value="">(loading...)</option>
-        </select>
-      </label>
+    <div class="card">
+      <h2>Backups</h2>
+      <div id="backupList">Loading...</div>
+      <button onclick="runBackup()">Run Backup Now</button>
+      <button onclick="loadBackups()">Refresh</button>
+      <br /><br />
+      <select id="restoreFile"></select>
       <button onclick="restoreSelectedBackup()">Restore</button>
-    </div>
-    <p id="restoreStatus" style="margin-top:1rem;font-size:0.9em;color:#aaa;"></p>
-  </div>
-
-  <!-- HARDWARE & DRIVERS -->
-  <div class="card">
-    <h2>Hardware & Drivers</h2>
-
-    <!-- Summary banner -->
-    <div id="driverSummary" style="
-      display:none;
-      background:#1e1e1e;
-      border:1px solid #333;
-      border-radius:8px;
-      padding:0.8rem 1rem;
-      margin-bottom:0.8rem;
-      line-height:1.5;
-      font-size:0.9em;
-    "></div>
-
-    <div id="driverStatus" style="margin-bottom:0.8rem;font-size:0.9em;"></div>
-
-    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-      <button onclick="loadDrivers()">Detect Hardware</button>
-      <button onclick="installDrivers()">Install Recommended Drivers</button>
+      <div id="backupStatus" class="status"></div>
     </div>
 
-    <p id="driverActionStatus" style="margin-top:1rem;font-size:0.9em;color:#aaa;"></p>
-  </div>
+    <div class="card">
+      <h2>Google Drive</h2>
+      <div id="gdriveStatus">Loading...</div>
+      <button onclick="updateGDriveSettings()">Refresh</button>
+    </div>
 
-  <!-- SYSTEM ACTIONS -->
-  <div class="card">
-    <h2>System Actions</h2>
-    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+    <div class="card">
+      <h2>System Actions</h2>
+      <button onclick="runSystemAction('update_os')">Full OS Update</button>
       <button onclick="runSystemAction('restart_frigate')">Restart Frigate</button>
-      <button onclick="runSystemAction('update_os')">Run System Update</button>
-      <button style="background:#f44336;" onclick="runSystemAction('reboot')">Reboot Host</button>
+      <button onclick="runSystemAction('reboot')">Reboot System</button>
+      <div id="actionStatus" class="status"></div>
     </div>
-    <p id="systemActionStatus" style="margin-top:1rem;font-size:0.9em;color:#aaa;"></p>
+
   </div>
 
-  <!-- LOGS -->
-  <div class="card">
-    <h2>Status Log</h2>
-    <pre id="statusLog">(loading...)</pre>
-  </div>
-
-  <footer>© 2025 Frigate Backup Manager — powered by FastAPI</footer>
-
-  <!-- JAVASCRIPT -->
   <script>
-    /* ========== CORE DASHBOARD FUNCTIONS ========== */
-    async function loadData() {
-      const res = await fetch('/api/config');
-      const data = await res.json();
-      const tbody = document.querySelector('#scheduleTable tbody');
-      if (!tbody) return;
-      tbody.innerHTML = '';
-      for (const [key, value] of Object.entries(data.config)) {
-        const friendly = data.friendly[key] || '';
-        const next = data.next_runs[key]?.in || '—';
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${key.replace('_CRON','').replace('_',' ')}</td>
-          <td>${friendly}</td>
-          <td>${next}</td>
-          <td><button onclick="runTask('${key}')">Run Now</button></td>
-        `;
-        tbody.appendChild(tr);
-      }
-    }
-
-    function colorize(line) {
-      if (line.includes('[Backup]')) return `<span style="color:#18b09f;">${line}</span>`;
-      if (line.includes('[Update]')) return `<span style="color:#a1c349;">${line}</span>`;
-      if (line.includes('[Scheduler]')) return `<span style="color:#3cb8ff;">${line}</span>`;
-      if (line.includes('[Logger]')) return `<span style="color:#ffb347;">${line}</span>`;
-      if (line.includes('[System]')) return `<span style="color:#ff99ff;">${line}</span>`;
-      if (line.includes('[Drivers]')) return `<span style="color:#ffcc66;">${line}</span>`;
-      if (line.includes('ERROR') || line.includes('Failed')) return `<span style="color:#ff5555;">${line}</span>`;
-      return line;
-    }
-
-    async function updateLog() {
-      const res = await fetch('/api/logs/latest?limit=50');
-      const data = await res.json();
-      const logBox = document.querySelector('#statusLog');
-      const isAtBottom = logBox.scrollTop + logBox.clientHeight >= logBox.scrollHeight - 10;
-      logBox.innerHTML = data.lines.map(colorize).join('<br>');
-      if (isAtBottom) logBox.scrollTop = logBox.scrollHeight;
-    }
-
-    /* ========== HARDWARE & DRIVER FUNCTIONS ========== */
-    async function loadDrivers() {
-      const res = await fetch('/api/drivers/detect');
-      const data = await res.json();
-      const box = document.getElementById('driverStatus');
-      const summary = document.getElementById('driverSummary');
-
-      const rows = [];
-      const summaryItems = [];
-
-      function fmt(key, label) {
-        const d = data[key];
-        const detected = d.detected;
-        const installed = d.installed || false; // backend can later provide this
-        const color = detected ? '#4CAF50' : '#F44336';
-        const statusLabel = detected
-          ? installed ? 'Detected (Driver Installed)' : 'Detected (Driver Missing)'
-          : 'Not detected';
-        rows.push(
-          `<div><b>${label}:</b> <span style="color:${color};">${statusLabel}</span>` +
-          (d.recommended_packages ? ` — pkgs: ${d.recommended_packages.join(', ')}` : '') +
-          `</div>`
-        );
-        const symbol = installed
-          ? '🟢'
-          : detected ? '🟡' : '🔴';
-        const textColor = installed ? '#4CAF50' : detected ? '#FFC107' : '#F44336';
-        summaryItems.push(`<span style="color:${textColor};">${symbol} ${label}</span>`);
-      }
-
-      fmt('coral', 'Coral TPU');
-      fmt('intel_gpu', 'Intel GPU');
-      fmt('nvidia_gpu', 'NVIDIA GPU');
-      fmt('amd_gpu', 'AMD GPU');
-
-      box.innerHTML = rows.join('');
-
-      const detectedCount = summaryItems.filter(i => i.includes('🟢') || i.includes('🟡')).length;
-      const total = summaryItems.length;
-      let bannerColor = '#1e1e1e';
-      let border = '#333';
-      let message = '';
-
-      if (detectedCount === 0) {
-        bannerColor = '#2b0000'; border = '#aa0000'; message = 'No supported hardware detected.';
-      } else if (detectedCount < total) {
-        bannerColor = '#2b2600'; border = '#aa8800'; message = 'Partial detection: some hardware detected.';
-      } else {
-        bannerColor = '#001f00'; border = '#00aa00'; message = 'All supported hardware detected.';
-      }
-
-      summary.innerHTML = `
-        <div><b>${message}</b></div>
-        <div style="margin-top:0.4rem;">${summaryItems.join(' &nbsp;|&nbsp; ')}</div>
-      `;
-      summary.style.display = 'block';
-      summary.style.background = bannerColor;
-      summary.style.borderColor = border;
-    }
-
-    async function installDrivers() {
-      const status = document.getElementById('driverActionStatus');
-      status.textContent = 'Installing drivers...';
-      const res = await fetch('/api/drivers/install', { method: 'POST' });
-      const data = await res.json();
-      if (data.ok) {
-        status.textContent = `✅ Installed: ${data.installed.join(', ') || 'nothing (already present or failed)'}`;
-      } else {
-        status.textContent = `❌ Driver installation: ${data.message || 'failed'}`;
-      }
-      await updateLog();
-      await loadDrivers();
-    }
-
-    /* ========== DRIVE SYNC STATUS ========== */
     async function loadStatus() {
-      const res = await fetch('/api/status');
-      const data = await res.json();
-
-      function setStatus(id, item) {
-        const el = document.getElementById(id);
-        el.innerHTML = `${item.time} <span style="color:${item.color};font-weight:bold;">(${item.state})</span>`;
-      }
-
-      setStatus('lastBackup', data.backup);
-      setStatus('lastUpdate', data.update);
-      setStatus('lastRotation', data.rotation);
-
-      document.getElementById('osVersion').textContent = data.system.os;
-      document.getElementById('frigateVersion').textContent = data.system.frigate;
-      const coral = document.getElementById('coralStatus');
-      coral.textContent = data.system.coral;
-      coral.style.color = data.system.coral === 'Detected' ? '#4CAF50' : '#F44336';
-
       try {
-        const resDrive = await fetch('/api/gdrive/status');
-        const gd = await resDrive.json();
-        const driveEl = document.getElementById('driveIndicator');
-        if (!gd.enabled) {
-          driveEl.textContent = 'Disabled';
-          driveEl.style.color = '#bbb';
-          driveEl.title = `Drive sync disabled.\nToken file path: ${gd.token_path || '/data/drive_token.json'}`;
-        } else if (!gd.configured) {
-          driveEl.textContent = 'Error';
-          driveEl.style.color = '#F44336';
-          driveEl.title = `Drive sync enabled but token invalid or missing.\nExpected at: ${gd.token_path || '/data/drive_token.json'}`;
-        } else {
-          driveEl.textContent = 'Active';
-          driveEl.style.color = '#4CAF50';
-          driveEl.title = `Drive sync active and authenticated.\nConnected as: ${gd.email || 'unknown'}\nToken file: ${gd.token_path}`;
-        }
+        const res = await fetch('/api/status');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        document.getElementById('systemStatus').innerText = JSON.stringify(data.system, null, 2);
+        document.getElementById('statusTime').innerText = "Last updated: " + data.timestamp;
       } catch (e) {
-        const driveEl = document.getElementById('driveIndicator');
-        driveEl.textContent = 'Error';
-        driveEl.style.color = '#F44336';
-        driveEl.title = `Error checking Drive status: ${e}`;
+        document.getElementById('systemStatus').innerHTML = "<span class='error'>Failed to load system status</span>";
+        console.error(e);
       }
     }
 
-    /* ========== GDRIVE SETTINGS ========== */
-    async function loadGDriveStatus() {
+    async function loadBackups() {
       try {
-        const res = await fetch('/api/gdrive/status');
+        const res = await fetch('/api/backups');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
-        document.getElementById('gdriveToggle').checked = !!data.enabled;
-        document.getElementById('gdriveTokenPath').value = data.token_path || '/data/drive_token.json';
-        const status = document.getElementById('gdriveStatus');
-        const warn = document.getElementById('gdriveWarning');
-        if (!data.configured) {
-          warn.style.display = 'block';
-          status.style.color = '#ff7777';
-          status.textContent = `Not authenticated. Expected token file at ${data.token_path}.`;
-        } else {
-          warn.style.display = 'none';
-          status.style.color = '#aaa';
-          status.textContent = `Connected as ${data.email || 'unknown'}. Sync is ${data.enabled ? 'enabled' : 'disabled'}.`;
-        }
+        const files = data.files || [];
+        const list = document.getElementById('backupList');
+        const select = document.getElementById('restoreFile');
+        list.innerHTML = files.length ? files.map(f => `<div>${f}</div>`).join('') : "<i>No backups found</i>";
+        select.innerHTML = files.map(f => `<option value="${f}">${f}</option>`).join('');
       } catch (e) {
-        document.getElementById('gdriveWarning').style.display = 'block';
-        document.getElementById('gdriveStatus').textContent = `Error loading Drive status: ${e}`;
+        console.error('loadBackups failed', e);
+        document.getElementById('backupList').innerHTML = "<span class='error'>Failed to load backups</span>";
+      }
+    }
+
+    async function runBackup() {
+      const status = document.getElementById('backupStatus');
+      status.textContent = "Running backup...";
+      try {
+        const res = await fetch('/api/backup/run', { method: 'POST' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        status.textContent = "✅ Backup complete!";
+        loadBackups();
+      } catch (e) {
+        status.textContent = "❌ Backup failed";
+        console.error(e);
+      }
+    }
+
+    async function restoreSelectedBackup() {
+      const file = document.getElementById('restoreFile').value;
+      const status = document.getElementById('backupStatus');
+      if (!file) {
+        status.textContent = "Select a backup first";
+        return;
+      }
+      status.textContent = "Restoring " + file + "...";
+      try {
+        const res = await fetch('/api/restore', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source: 'local', filename: file })
+        });
+        const data = await res.json();
+        status.textContent = data.ok ? "✅ Restore successful" : "❌ Restore failed";
+      } catch (e) {
+        status.textContent = "❌ Restore error";
+        console.error(e);
       }
     }
 
     async function updateGDriveSettings() {
-      const enabled = document.getElementById('gdriveToggle').checked;
-      const token_path = document.getElementById('gdriveTokenPath').value || '/data/drive_token.json';
-      const res = await fetch('/api/gdrive/settings', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({enabled, token_path})
-      });
-      const data = await res.json();
-      const status = document.getElementById('gdriveStatus');
-      const warn = document.getElementById('gdriveWarning');
-      if (data.ok) {
-        status.textContent = `✅ Settings saved. Sync ${data.enabled ? 'enabled' : 'disabled'} using ${data.token_path}`;
-        status.style.color = '#aaa';
-        warn.style.display = 'none';
-      } else {
-        status.textContent = `❌ Failed to save: ${data.error || 'unknown error'}`;
-        warn.style.display = 'block';
+      const el = document.getElementById('gdriveStatus');
+      el.innerText = "Loading...";
+      try {
+        const res = await fetch('/api/gdrive/status');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        let html = "";
+        if (!data.configured) {
+          html += "<div>⚠️ Google Drive not configured</div>";
+        } else {
+          html += `<div>Account: ${data.email || 'Unknown'}</div>`;
+          html += `<div>Enabled: ${data.enabled}</div>`;
+          html += `<div>Token path: ${data.token_path}</div>`;
+        }
+        el.innerHTML = html;
+      } catch (e) {
+        console.warn('Drive status error', e);
+        el.innerHTML = "<div class='error'>Drive unavailable or token missing</div>";
       }
-      await loadGDriveStatus();
     }
 
-    /* ========== INITIALIZE DASHBOARD ========== */
-    document.getElementById('gdriveToggle').addEventListener('change', updateGDriveSettings);
-    document.getElementById('restoreSource').addEventListener('change', loadBackups);
+    async function runSystemAction(action) {
+      const status = document.getElementById('actionStatus');
+      status.textContent = "Running " + action + "...";
+      try {
+        const res = await fetch('/api/system/' + action, { method: 'POST' });
+        const data = await res.json();
+        status.textContent = data.ok ? `✅ ${action} complete` : `❌ ${action} failed`;
+      } catch (e) {
+        status.textContent = "❌ Action failed";
+        console.error(e);
+      }
+    }
 
-    loadData();
-    updateLog();
+    // Auto-refresh
     loadStatus();
-    loadDrivers();
-    loadGDriveStatus();
-    setInterval(updateLog, 5000);
-    setInterval(loadStatus, 60000);
+    loadBackups();
+    updateGDriveSettings();
+    setInterval(loadStatus, 10000);
+    setInterval(loadBackups, 60000);
   </script>
 </body>
 </html>

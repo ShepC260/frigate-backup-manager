@@ -5,7 +5,7 @@ import os, datetime
 
 from logger import LOG_DIR, write_log
 from backup import run_backup, list_backups
-from restore import restore_local_backup, restore_drive_backup, list_drive_backups
+from restore import restore_local, restore_from_drive, _list_drive_backups, list_backups
 from update import run_full_update, update_frigate, check_for_updates
 from drivers import detect_drivers, install_drivers
 from scheduler import reload_scheduler, get_next_run_times, init_scheduler
