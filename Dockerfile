@@ -20,7 +20,7 @@ RUN mkdir -p /data /logs /backups /config
 COPY app /app
 
 # ---- Install Python dependencies ----
-RUN pip install --no-cache-dir \
+RUN pip install --no-cache-dir --break-system-packages\
     fastapi uvicorn jinja2 apscheduler cron-descriptor \
     google-auth google-auth-oauthlib google-api-python-client \
     google-auth-httplib2 requests
