@@ -3,7 +3,7 @@ version: "3.9"
 services:
   frigate-backup-manager:
     container_name: frigate-backup-manager
-    image: ghcr.io/${GITHUB_USER:-shepc260}/frigate-backup-manager:latest
+    image: ghcr.io/shepc260/frigate-backup-manager:latest
     restart: unless-stopped
     ports:
       - "8082:8082"
