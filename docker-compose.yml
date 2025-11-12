@@ -4,6 +4,7 @@ services:
   frigate-backup-manager:
     container_name: frigate-backup-manager
     image: frigate-backup-manager:latest
+    build:
     restart: unless-stopped
     ports:
       - "8082:8082"
