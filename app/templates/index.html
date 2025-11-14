@@ -12,12 +12,31 @@
       margin: 0;
       padding: 1rem;
     }
-    h1 { color: #18b09f; }
+
+    h1 {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: #18b09f;
+      font-weight: 700;
+      font-size: 1.8rem;
+      margin-bottom: 1.2rem;
+    }
+
+    h1 img {
+      height: 40px;
+      width: auto;
+      border-radius: 8px;
+      box-shadow: 0 0 6px #000a;
+      vertical-align: middle;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 1rem;
     }
+
     .card {
       background: #181818;
       border: 1px solid #333;
@@ -25,6 +44,12 @@
       padding: 1rem;
       box-shadow: 0 0 10px #000a;
     }
+
+    h2 {
+      color: #f5f5f5;
+      font-weight: 600;
+    }
+
     button {
       background: #18b09f;
       color: #000;
@@ -34,8 +59,13 @@
       cursor: pointer;
       font-weight: 600;
       transition: all 0.2s;
+      margin: 0.2rem;
     }
-    button:hover { background: #14a095; }
+
+    button:hover {
+      background: #14a095;
+    }
+
     select, input {
       background: #202020;
       color: #fff;
@@ -43,24 +73,33 @@
       border-radius: 6px;
       padding: 0.3rem;
     }
+
     .status {
       margin-top: 0.5rem;
       font-size: 0.9em;
       color: #aaa;
     }
-    .error { color: #ff5555; }
+
+    .error {
+      color: #ff5555;
+    }
   </style>
 </head>
 <body>
-  <h1>🧰 Frigate Backup Manager</h1>
-  <div class="grid">
+  <h1>
+    <img src="/static/logo.png" alt="Frigate Backup Manager">
+    Frigate Backup Manager
+  </h1>
 
+  <div class="grid">
+    <!-- System Status -->
     <div class="card">
       <h2>System Status</h2>
       <pre id="systemStatus">Loading...</pre>
       <div class="status" id="statusTime"></div>
     </div>
 
+    <!-- Backups -->
     <div class="card">
       <h2>Backups</h2>
       <div id="backupList">Loading...</div>
@@ -72,12 +111,14 @@
       <div id="backupStatus" class="status"></div>
     </div>
 
+    <!-- Google Drive -->
     <div class="card">
       <h2>Google Drive</h2>
       <div id="gdriveStatus">Loading...</div>
       <button onclick="updateGDriveSettings()">Refresh</button>
     </div>
 
+    <!-- System Actions -->
     <div class="card">
       <h2>System Actions</h2>
       <button onclick="runSystemAction('update_os')">Full OS Update</button>
@@ -85,7 +126,6 @@
       <button onclick="runSystemAction('reboot')">Reboot System</button>
       <div id="actionStatus" class="status"></div>
     </div>
-
   </div>
 
   <script>
@@ -162,11 +202,12 @@
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
         let html = "";
+        html += `<div>Status: ${data.message || 'Unknown'}</div>`;
         if (!data.configured) {
           html += "<div>⚠️ Google Drive not configured</div>";
         } else {
           html += `<div>Account: ${data.email || 'Unknown'}</div>`;
-          html += `<div>Enabled: ${data.enabled}</div>`;
+          html += `<div>Enabled: ${data.configured}</div>`;
           html += `<div>Token path: ${data.token_path}</div>`;
         }
         el.innerHTML = html;
