@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Frigate Backup Manager</title>
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/png" href="/static/favicon.png" sizes="32x32">
+  <link rel="shortcut icon" href="/static/favicon.png">
+  <meta name="theme-color" content="#101010">
+
   <style>
     body {
       background: #101010;
@@ -151,7 +157,7 @@
         const list = document.getElementById('backupList');
         const select = document.getElementById('restoreFile');
         list.innerHTML = files.length ? files.map(f => `<div>${f}</div>`).join('') : "<i>No backups found</i>";
-        select.innerHTML = files.map(f => `<option value="${f}">${f}</option>`).join('');
+        select.innerHTML = files.map(f => `<option value=\"${f}\">${f}</option>`).join('');
       } catch (e) {
         console.error('loadBackups failed', e);
         document.getElementById('backupList').innerHTML = "<span class='error'>Failed to load backups</span>";
