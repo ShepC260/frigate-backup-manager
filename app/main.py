@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+app.mount("/static", StaticFiles(directory="/app/static"), name="static")
 import os, datetime
 
 from logger import LOG_DIR, write_log
