@@ -14,6 +14,12 @@ from backup import list_backups, run_backup, restore_backup
 from updater import update_os
 from driver_installer import install_coral_drivers
 from gdrive_sync import get_drive_status, upload_backup_to_drive
+from self_updater import (
+    get_update_status,
+    set_update_channel,
+    get_update_channel,
+    download_update,
+)
 
 app = FastAPI(title="Frigate Backup Manager")
 
@@ -267,3 +273,44 @@ async def api_logs_content(file: int = 0, max_lines: int = 200):
     """
     lines = read_log_file(index=file, max_lines=max_lines)
     return {"lines": lines}
+
+
+# --------- Self-updater APIs ---------
+
+
+@app.get("/api/update/status")
+async def api_update_status():
+    """
+    Check update status against GitHub.
+    """
+    status = get_update_status()
+    # Always include channel from current config
+    status["channel"] = get_update_channel()
+    return status
+
+
+@app.post("/api/update/channel")
+async def api_update_channel(request: Request):
+    """
+    Change update channel: main, releases, dev
+    """
+    body = await request.json()
+    channel = str(body.get("channel", "")).strip()
+    ok, msg = set_update_channel(channel)
+    if not ok:
+        return JSONResponse({"ok": False, "message": msg}, status_code=400)
+
+    status = get_update_status()
+    status["message"] = msg
+    return status
+
+
+@app.post("/api/update/download")
+async def api_update_download():
+    """
+    Download the latest update zip into /data/updates.
+    Does NOT apply the update; use update.sh on the host.
+    """
+    result = download_update()
+    code = 200 if result.get("ok") else 500
+    return JSONResponse(result, status_code=code)

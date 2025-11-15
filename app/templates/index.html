@@ -220,6 +220,29 @@
       </div>
       <div id="hostnameStatus" class="status"></div>
     </div>
+
+    <!-- Updates -->
+    <div class="card">
+      <h2>Updates</h2>
+      <div id="updateInfo">Loading...</div>
+      <div style="margin-top: 0.5rem; margin-bottom: 0.3rem;">
+        <label style="font-size: 0.9rem;">
+          Channel:
+          <select id="updateChannel" onchange="changeUpdateChannel()">
+            <option value="main">Main (dev)</option>
+            <option value="releases">Releases only</option>
+            <option value="dev">Development</option>
+          </select>
+        </label>
+      </div>
+      <button onclick="loadUpdateStatus()">Check for Updates</button>
+      <button onclick="downloadUpdate()">Download Latest</button>
+      <div id="updateStatus" class="status"></div>
+      <div style="font-size: 0.8rem; color: #aaa; margin-top: 4px">
+        Downloaded updates are stored under <code>/data/updates</code>.
+        To apply them, rebuild on the host using <code>./update.sh</code>.
+      </div>
+    </div>
   </div>
 
   <!-- Last Command Output Panel -->
@@ -488,12 +511,132 @@
       setTimeout(loadStatus, 1000);
     }
 
+    // ----- Update card logic -----
+
+    async function loadUpdateStatus() {
+      const info = document.getElementById("updateInfo");
+      const statusEl = document.getElementById("updateStatus");
+      try {
+        const res = await fetch("/api/update/status");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+
+        const channelSel = document.getElementById("updateChannel");
+        if (data.channel) {
+          channelSel.value = data.channel;
+        }
+
+        let badgeHtml = "";
+        if (!data.ok) {
+          badgeHtml = '<span class="badge badge-red">Error</span>';
+        } else if (data.update_available) {
+          badgeHtml = '<span class="badge badge-yellow">Update available</span>';
+        } else {
+          badgeHtml = '<span class="badge badge-green">Up to date</span>';
+        }
+
+        info.innerHTML = `
+          <div class="status-row">
+            <span class="status-key">Channel</span>
+            <span class="status-value">${data.channel || "-"}</span>
+          </div>
+          <div class="status-row">
+            <span class="status-key">Current</span>
+            <span class="status-value">${data.local_version || "unknown"}</span>
+          </div>
+          <div class="status-row">
+            <span class="status-key">Latest</span>
+            <span class="status-value">${data.remote_version || "unknown"}</span>
+          </div>
+          <div class="status-row">
+            <span class="status-key">Status</span>
+            <span class="status-value">${badgeHtml}</span>
+          </div>
+          <div class="status-row">
+            <span class="status-key">Last check</span>
+            <span class="status-value">${data.checked_at || "-"}</span>
+          </div>
+        `;
+
+        if (!data.ok && data.error) {
+          statusEl.textContent = "⚠️ " + data.error;
+        } else {
+          statusEl.textContent = "";
+        }
+      } catch (e) {
+        console.error("loadUpdateStatus failed", e);
+        info.innerHTML =
+          "<span class='error'>Failed to check update status</span>";
+        statusEl.textContent = "⚠️ Update check failed.";
+      }
+    }
+
+    async function changeUpdateChannel() {
+      const channelSel = document.getElementById("updateChannel");
+      const channel = channelSel.value;
+      const statusEl = document.getElementById("updateStatus");
+      statusEl.textContent = "Changing channel...";
+      updateLastOutput("Changing update channel to " + channel + "...");
+      try {
+        const res = await fetch("/api/update/channel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ channel }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          const msg = data.message || "Failed to change channel.";
+          statusEl.textContent = "❌ " + msg;
+          updateLastOutput(msg);
+        } else {
+          statusEl.textContent = "✅ " + (data.message || "Channel updated.");
+          updateLastOutput(data.message || "Channel updated.");
+          loadUpdateStatus();
+        }
+      } catch (e) {
+        const msg = "Error changing channel: " + e;
+        statusEl.textContent = "❌ " + msg;
+        updateLastOutput(msg);
+        console.error(e);
+      }
+    }
+
+    async function downloadUpdate() {
+      const statusEl = document.getElementById("updateStatus");
+      statusEl.textContent = "Downloading update...";
+      updateLastOutput("Downloading latest update package...");
+      try {
+        const res = await fetch("/api/update/download", {
+          method: "POST",
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          const msg = data.message || "Update download failed.";
+          statusEl.textContent = "❌ " + msg;
+          updateLastOutput(msg);
+        } else {
+          const msg = data.message || "Update package downloaded.";
+          statusEl.textContent = "✅ " + msg;
+          updateLastOutput(msg);
+          loadUpdateStatus();
+        }
+      } catch (e) {
+        const msg = "Update download error: " + e;
+        statusEl.textContent = "❌ " + msg;
+        updateLastOutput(msg);
+        console.error(e);
+      }
+    }
+
     // Initial load & refresh timers
     loadStatus();
     loadBackups();
     refreshDrive();
+    loadUpdateStatus();
+
     setInterval(loadStatus, 10000);
     setInterval(loadBackups, 60000);
+    setInterval(loadUpdateStatus, 60000);
   </script>
 </body>
 </html>
