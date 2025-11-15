@@ -40,3 +40,53 @@ def write_log(component: str, message: str):
     line = f"[{ts}] [{component}] {message}\n"
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(line)
+
+
+def list_log_files():
+    """
+    Return a list of available log files with index, name, and size.
+    index=0 -> manager.log
+    index=1 -> manager.log.1, etc.
+    """
+    _ensure_log_dir()
+    files = []
+
+    def _add(idx: int, path: str):
+        if os.path.exists(path) and os.path.isfile(path):
+            files.append(
+                {
+                    "index": idx,
+                    "name": os.path.basename(path),
+                    "size": os.path.getsize(path),
+                }
+            )
+
+    _add(0, LOG_FILE)
+    for i in range(1, MAX_BACKUPS + 1):
+        rotated = f"{LOG_FILE}.{i}"
+        _add(i, rotated)
+
+    return files
+
+
+def read_log_file(index: int = 0, max_lines: int = 200):
+    """
+    Return last max_lines of the selected log file as a list of strings.
+    """
+    _ensure_log_dir()
+    if index == 0:
+        path = LOG_FILE
+    else:
+        path = f"{LOG_FILE}.{index}"
+
+    if not os.path.exists(path) or not os.path.isfile(path):
+        return []
+
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+        if max_lines <= 0:
+            return [line.rstrip("\n") for line in lines]
+        return [line.rstrip("\n") for line in lines[-max_lines:]]
+    except Exception:
+        return []

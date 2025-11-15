@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Frigate Backup Manager - Logs</title>
+  <style>
+    body {
+      background: #101010;
+      color: #f0f0f0;
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 1rem;
+    }
+    h1 {
+      color: #18b09f;
+      font-size: 1.6rem;
+      margin-bottom: 0.8rem;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0.8rem;
+      font-size: 0.9rem;
+    }
+    select {
+      background: #202020;
+      color: #fff;
+      border: 1px solid #444;
+      border-radius: 6px;
+      padding: 0.3rem;
+    }
+    button {
+      background: #18b09f;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      padding: 0.35rem 0.7rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    button:hover {
+      background: #14a095;
+    }
+    label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    input[type="checkbox"] {
+      accent-color: #18b09f;
+    }
+    .log-container {
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #0b0b0b;
+      padding: 0.5rem;
+      max-height: calc(100vh - 150px);
+      overflow-y: auto;
+    }
+    pre {
+      margin: 0;
+      font-family: Menlo, Consolas, monospace;
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .meta {
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-bottom: 0.3rem;
+    }
+    a {
+      color: #3cb8ff;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>Frigate Backup Manager - Logs</h1>
+
+  <div class="controls">
+    <div>
+      Log file:
+      <select id="logFileSelect"></select>
+    </div>
+    <button onclick="reloadLogs()">Refresh</button>
+    <button onclick="scrollToBottom()">Scroll to bottom</button>
+    <label>
+      <input type="checkbox" id="autoRefresh" checked />
+      Auto refresh (5s)
+    </label>
+    <span class="meta" id="logMeta"></span>
+  </div>
+
+  <div class="log-container" id="logContainer">
+    <pre id="logContent">Loading logs...</pre>
+  </div>
+
+  <script>
+    let files = [];
+    let currentIndex = 0;
+    let refreshTimer = null;
+
+    async function loadFileList() {
+      try {
+        const res = await fetch("/api/logs/list");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        files = data.files || [];
+        const select = document.getElementById("logFileSelect");
+        select.innerHTML = files
+          .map(
+            (f) =>
+              `<option value="${f.index}">${f.name} (${f.size} bytes)</option>`
+          )
+          .join("");
+
+        if (files.length > 0) {
+          currentIndex = files[0].index;
+          select.value = String(currentIndex);
+        }
+
+        updateMeta();
+      } catch (e) {
+        console.error("Failed to load log file list", e);
+        document.getElementById("logContent").textContent =
+          "Failed to load log file list.";
+      }
+    }
+
+    function updateMeta() {
+      const meta = document.getElementById("logMeta");
+      const file = files.find((f) => f.index === currentIndex);
+      if (file) {
+        meta.textContent = `${file.name} — ${file.size} bytes`;
+      } else {
+        meta.textContent = "";
+      }
+    }
+
+    async function reloadLogs() {
+      try {
+        const res = await fetch(
+          `/api/logs/content?file=${currentIndex}&max_lines=500`
+        );
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        const lines = data.lines || [];
+        document.getElementById("logContent").textContent =
+          lines.length > 0 ? lines.join("\n") : "(no log entries)";
+        if (document.getElementById("autoRefresh").checked) {
+          scrollToBottom();
+        }
+      } catch (e) {
+        console.error("Failed to load log content", e);
+        document.getElementById("logContent").textContent =
+          "Failed to load log content.";
+      }
+    }
+
+    function scrollToBottom() {
+      const container = document.getElementById("logContainer");
+      container.scrollTop = container.scrollHeight;
+    }
+
+    document.getElementById("logFileSelect").addEventListener("change", (e) => {
+      currentIndex = parseInt(e.target.value, 10);
+      updateMeta();
+      reloadLogs();
+    });
+
+    document.getElementById("autoRefresh").addEventListener("change", (e) => {
+      if (e.target.checked) {
+        startAutoRefresh();
+      } else {
+        stopAutoRefresh();
+      }
+    });
+
+    function startAutoRefresh() {
+      stopAutoRefresh();
+      refreshTimer = setInterval(reloadLogs, 5000);
+    }
+
+    function stopAutoRefresh() {
+      if (refreshTimer) {
+        clearInterval(refreshTimer);
+        refreshTimer = null;
+      }
+    }
+
+    async function init() {
+      await loadFileList();
+      await reloadLogs();
+      startAutoRefresh();
+    }
+
+    init();
+  </script>
+</body>
+</html>

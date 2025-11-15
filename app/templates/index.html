@@ -108,6 +108,58 @@
       border-bottom: 1px solid #1f1f1f;
       margin: 8px 0;
     }
+
+    /* Last command output panel */
+    .last-output-wrapper {
+      margin-top: 1.5rem;
+      background: #151515;
+      border-radius: 10px;
+      border: 1px solid #333;
+      overflow: hidden;
+    }
+    .last-output-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 0.8rem;
+      cursor: pointer;
+      background: #181818;
+    }
+    .last-output-header span {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .last-output-toggle {
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+    .last-output-body {
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 0.5rem 0.8rem 0.8rem;
+      background: #101010;
+      border-top: 1px solid #222;
+    }
+    .last-output-body pre {
+      margin: 0;
+      font-family: Menlo, Consolas, monospace;
+      font-size: 0.85rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .footer-links {
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+    .footer-links a {
+      color: #3cb8ff;
+      text-decoration: none;
+    }
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -170,7 +222,45 @@
     </div>
   </div>
 
+  <!-- Last Command Output Panel -->
+  <div class="last-output-wrapper">
+    <div class="last-output-header" onclick="toggleLastOutput()">
+      <span>Last Command Output</span>
+      <span class="last-output-toggle" id="lastOutputToggle">▼</span>
+    </div>
+    <div class="last-output-body" id="lastOutputBody">
+      <pre id="lastOutputContent">No commands run yet.</pre>
+    </div>
+  </div>
+
+  <div class="footer-links">
+    📄 <a href="/logs" target="_blank">View full logs</a>
+  </div>
+
   <script>
+    let lastOutputCollapsed = false;
+
+    function toggleLastOutput() {
+      const body = document.getElementById("lastOutputBody");
+      const toggle = document.getElementById("lastOutputToggle");
+      lastOutputCollapsed = !lastOutputCollapsed;
+      if (lastOutputCollapsed) {
+        body.style.display = "none";
+        toggle.textContent = "▶";
+      } else {
+        body.style.display = "block";
+        toggle.textContent = "▼";
+      }
+    }
+
+    function updateLastOutput(message) {
+      const box = document.getElementById("lastOutputContent");
+      const ts = new Date().toLocaleString();
+      box.textContent = `[${ts}]\n${message}`;
+      const body = document.getElementById("lastOutputBody");
+      body.scrollTop = body.scrollHeight;
+    }
+
     async function loadStatus() {
       try {
         const res = await fetch("/api/status");
@@ -245,13 +335,22 @@
     async function runBackup() {
       const status = document.getElementById("backupStatus");
       status.textContent = "Running backup...";
+      updateLastOutput("Backup started...");
       try {
         const res = await fetch("/api/backup/run", { method: "POST" });
-        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          const msg = data.message || data.error || "Backup failed.";
+          status.textContent = "❌ " + msg;
+          updateLastOutput(msg);
+          return;
+        }
         status.textContent = "✅ Backup complete!";
+        updateLastOutput(data.message || "Backup completed successfully.");
         loadBackups();
       } catch (e) {
         status.textContent = "❌ Backup failed";
+        updateLastOutput("Backup failed: " + e);
         console.error(e);
       }
     }
@@ -260,10 +359,13 @@
       const file = document.getElementById("restoreFile").value;
       const status = document.getElementById("backupStatus");
       if (!file) {
-        status.textContent = "Select a backup first";
+        const msg = "Select a backup first.";
+        status.textContent = msg;
+        updateLastOutput(msg);
         return;
       }
       status.textContent = "Restoring " + file + "...";
+      updateLastOutput("Restore requested for " + file + "...");
       try {
         const res = await fetch("/api/restore", {
           method: "POST",
@@ -271,11 +373,13 @@
           body: JSON.stringify({ filename: file }),
         });
         const data = await res.json();
-        status.textContent = data.ok
-          ? "✅ Restore successful"
-          : "❌ Restore failed";
+        const msg = data.message || (data.ok ? "Restore successful." : "Restore failed.");
+        status.textContent = data.ok ? "✅ " + msg : "❌ " + msg;
+        updateLastOutput(msg);
       } catch (e) {
+        const msg = "Restore error: " + e;
         status.textContent = "❌ Restore error";
+        updateLastOutput(msg);
         console.error(e);
       }
     }
@@ -305,16 +409,19 @@
         }
 
         el.innerHTML = html;
+        updateLastOutput("Google Drive status checked: " + (data.message || "Unknown"));
       } catch (e) {
         console.warn("Drive status error", e);
         el.innerHTML =
           "<div class='error'>Drive unavailable or token missing</div>";
+        updateLastOutput("Google Drive status check failed.");
       }
     }
 
     async function runSystemAction(action) {
       const status = document.getElementById("actionStatus");
       status.textContent = "Running " + action + "...";
+      updateLastOutput("System action requested: " + action);
 
       let endpoint = "";
       if (action === "update_os") endpoint = "/api/system/update_os";
@@ -326,11 +433,13 @@
       try {
         const res = await fetch(endpoint, { method: "POST" });
         const data = await res.json();
-        status.textContent = data.ok
-          ? `✅ ${action} complete`
-          : `❌ ${action} failed`;
+        const msg = data.message || (data.ok ? "Action completed." : "Action failed.");
+        status.textContent = data.ok ? "✅ " + msg : "❌ " + msg;
+        updateLastOutput(msg);
       } catch (e) {
+        const msg = "Action failed: " + e;
         status.textContent = "❌ Action failed";
+        updateLastOutput(msg);
         console.error(e);
       }
     }
@@ -341,11 +450,14 @@
       const newName = box.value.trim();
 
       if (!newName) {
-        status.textContent = "Hostname cannot be empty.";
+        const msg = "Hostname cannot be empty.";
+        status.textContent = msg;
+        updateLastOutput(msg);
         return;
       }
 
       status.textContent = "Applying hostname...";
+      updateLastOutput("Hostname change requested: " + newName);
 
       try {
         const res = await fetch("/api/system/set_hostname", {
@@ -355,18 +467,21 @@
         });
 
         const data = await res.json();
+        const msg = data.message || (data.ok ? "Hostname changed." : "Hostname change failed.");
 
         if (data.ok) {
-          status.textContent =
-            `✅ Hostname changed to "${data.hostname}". Reboot required.`;
+          status.textContent = `✅ Hostname changed to "${data.hostname}". Reboot required.`;
           status.style.color = "#ffcc00";
         } else {
-          status.textContent = `❌ Failed: ${data.error}`;
+          status.textContent = `❌ Failed: ${data.error || "Unknown error"}`;
           status.style.color = "#ff5555";
         }
+        updateLastOutput(msg);
       } catch (e) {
+        const msg = "Error setting hostname: " + e;
         status.textContent = "❌ Error setting hostname.";
         status.style.color = "#ff5555";
+        updateLastOutput(msg);
         console.error(e);
       }
 

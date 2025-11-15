@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from logger import write_log
+from logger import write_log, list_log_files, read_log_file
 from config_manager import load_config, save_config
 from backup import list_backups, run_backup, restore_backup
 from updater import update_os
@@ -42,7 +42,7 @@ def get_os_version() -> str:
 
 
 def get_frigate_version() -> str:
-    # Placeholder — could be extended to query Frigate's API
+    # Placeholder — could be extended to query Frigate's API / container label
     return "not found"
 
 
@@ -57,6 +57,12 @@ async def dashboard(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+@app.get("/logs")
+async def logs_page(request: Request):
+    """Full log viewer page."""
+    return templates.TemplateResponse("logs.html", {"request": request})
+
+
 @app.get("/api/status")
 async def api_status():
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -69,22 +75,9 @@ async def api_status():
         "hostname": hostname,
     }
 
-    # These can be made smarter later (e.g. track last success, etc.)
-    backup_state = {
-        "time": timestamp,
-        "state": "ok",
-        "color": "#18b09f",
-    }
-    update_state = {
-        "time": timestamp,
-        "state": "ok",
-        "color": "#a1c349",
-    }
-    rotation_state = {
-        "time": timestamp,
-        "state": "ok",
-        "color": "#3cb8ff",
-    }
+    backup_state = {"time": timestamp, "state": "ok", "color": "#18b09f"}
+    update_state = {"time": timestamp, "state": "ok", "color": "#a1c349"}
+    rotation_state = {"time": timestamp, "state": "ok", "color": "#3cb8ff"}
 
     return {
         "timestamp": timestamp,
@@ -106,12 +99,16 @@ async def api_run_backup():
     cfg = load_config()
     path = run_backup()
     if not path:
-        return JSONResponse({"ok": False, "error": "Backup failed"}, status_code=500)
+        msg = "Backup failed. See logs for details."
+        return JSONResponse({"ok": False, "error": msg, "message": msg}, status_code=500)
 
+    drive_msg = ""
     if cfg.get("GDRIVE_ENABLED", False):
-        upload_backup_to_drive(path)
+        uploaded = upload_backup_to_drive(path)
+        drive_msg = " and uploaded to Google Drive" if uploaded else " (Drive upload failed or disabled)"
 
-    return {"ok": True, "path": path}
+    msg = f"Backup completed: {path}{drive_msg}"
+    return {"ok": True, "path": path, "message": msg}
 
 
 @app.post("/api/restore")
@@ -119,10 +116,12 @@ async def api_restore(request: Request):
     body = await request.json()
     filename = body.get("filename")
     if not filename:
-        return JSONResponse({"ok": False, "error": "No filename provided"}, status_code=400)
+        msg = "No filename provided."
+        return JSONResponse({"ok": False, "error": msg, "message": msg}, status_code=400)
 
     success = restore_backup(filename)
-    return {"ok": success}
+    msg = "Restore completed." if success else "Restore failed. Check logs."
+    return {"ok": success, "message": msg}
 
 
 @app.get("/api/gdrive/status")
@@ -136,7 +135,6 @@ async def api_gdrive_status():
 @app.get("/api/config")
 async def api_get_config():
     cfg = load_config()
-    # Only expose safe keys
     public = {
         "BACKUP_PATHS": cfg.get("BACKUP_PATHS"),
         "BACKUP_RETENTION": cfg.get("BACKUP_RETENTION"),
@@ -162,19 +160,25 @@ async def api_set_config(request: Request):
             pass
 
     save_config(cfg)
-    return {"ok": True}
+    return {"ok": True, "message": "Configuration updated."}
 
 
 @app.post("/api/system/update_os")
 async def api_update_os():
     ok = update_os()
-    return {"ok": ok}
+    msg = "OS update completed." if ok else "OS update failed. Check logs."
+    return {"ok": ok, "message": msg}
 
 
 @app.post("/api/system/install_drivers")
 async def api_install_drivers():
     ok = install_coral_drivers()
-    return {"ok": ok}
+    msg = (
+        "Coral driver installation requested (stub only in container)."
+        if ok
+        else "Coral driver install not implemented inside container."
+    )
+    return {"ok": ok, "message": msg}
 
 
 @app.post("/api/system/restart_frigate")
@@ -186,12 +190,14 @@ async def api_restart_frigate():
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
         if result.returncode != 0:
             write_log("System", f"Frigate restart failed: {result.stderr}")
-            return {"ok": False, "error": result.stderr}
+            msg = f"Frigate restart failed: {result.stderr}"
+            return {"ok": False, "error": result.stderr, "message": msg}
         write_log("System", "Frigate restart command completed.")
-        return {"ok": True}
+        return {"ok": True, "message": "Frigate restart command completed."}
     except Exception as e:
         write_log("System", f"Frigate restart exception: {e}")
-        return {"ok": False, "error": str(e)}
+        msg = f"Frigate restart exception: {e}"
+        return {"ok": False, "error": str(e), "message": msg}
 
 
 @app.post("/api/system/reboot")
@@ -199,10 +205,11 @@ async def api_reboot():
     try:
         write_log("System", "Reboot requested via API.")
         subprocess.Popen(["reboot"])
-        return {"ok": True}
+        return {"ok": True, "message": "Reboot command issued."}
     except Exception as e:
         write_log("System", f"Reboot failed: {e}")
-        return {"ok": False, "error": str(e)}
+        msg = f"Reboot failed: {e}"
+        return {"ok": False, "error": str(e), "message": msg}
 
 
 @app.post("/api/system/set_hostname")
@@ -212,15 +219,15 @@ async def api_set_hostname(request: Request):
         new_name = body.get("hostname", "").strip()
 
         if not new_name:
-            return {"ok": False, "error": "Hostname cannot be empty"}
+            msg = "Hostname cannot be empty."
+            return {"ok": False, "error": msg, "message": msg}
 
         if len(new_name) > 60 or not new_name.replace("-", "").isalnum():
-            return {"ok": False, "error": "Invalid hostname format"}
+            msg = "Invalid hostname format. Use letters, numbers, and hyphens only."
+            return {"ok": False, "error": msg, "message": msg}
 
-        # Change in runtime
         os.system(f"hostnamectl set-hostname {new_name}")
 
-        # Update /etc/hosts so 127.0.1.1 points at the new hostname
         try:
             with open("/etc/hosts", "r", encoding="utf-8") as f:
                 lines = f.readlines()
@@ -234,7 +241,29 @@ async def api_set_hostname(request: Request):
             write_log("System", f"Failed to update /etc/hosts: {e}")
 
         write_log("System", f"Hostname changed to: {new_name}")
-        return {"ok": True, "hostname": new_name, "reboot_required": True}
+        msg = f"Hostname changed to {new_name}. Reboot required."
+        return {"ok": True, "hostname": new_name, "reboot_required": True, "message": msg}
     except Exception as e:
         write_log("System", f"Hostname change failed: {e}")
-        return {"ok": False, "error": str(e)}
+        msg = f"Hostname change failed: {e}"
+        return {"ok": False, "error": str(e), "message": msg}
+
+
+# --------- Log viewer APIs ---------
+
+
+@app.get("/api/logs/list")
+async def api_logs_list():
+    """Return list of available log files."""
+    files = list_log_files()
+    return {"files": files}
+
+
+@app.get("/api/logs/content")
+async def api_logs_content(file: int = 0, max_lines: int = 200):
+    """
+    Return last N lines of the selected log file.
+    file=0 -> manager.log, file=1 -> manager.log.1, etc.
+    """
+    lines = read_log_file(index=file, max_lines=max_lines)
+    return {"lines": lines}
