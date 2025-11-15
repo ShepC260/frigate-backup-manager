@@ -1,0 +1,22 @@
+<div class="modal-backdrop" id="hostnameModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Set Hostname</h3>
+      <span class="modal-close" onclick="closeHostnameModal()">✕</span>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:0.4rem;">
+        <label for="hostnameInput">New hostname</label>
+      </div>
+      <input id="hostnameInput" type="text" placeholder="e.g. frigate-3070" />
+      <div style="font-size:0.8rem;color:#aaa;margin-top:0.4rem;">
+        ⚠ Changing hostname requires a reboot.
+      </div>
+      <div id="hostnameStatus" class="status"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="closeHostnameModal()">Cancel</button>
+      <button onclick="applyHostname()">Apply</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,35 @@
+<div class="modal-backdrop" id="driveModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Google Drive Configuration</h3>
+      <span class="modal-close" onclick="closeDriveModal()">✕</span>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:0.85rem;color:#ccc;margin-bottom:0.6rem;">
+        To configure Google Drive backups, generate a token using the
+        <a href="https://developers.google.com/oauthplayground/" target="_blank">
+          Google OAuth Playground
+        </a>.
+        Use your own OAuth credentials, select the Google Drive API scopes,
+        exchange the authorization code for tokens, then paste the resulting
+        <code>token.json</code> content below.
+      </p>
+
+      <div style="margin-bottom:0.4rem;">
+        <strong>Paste token JSON:</strong>
+      </div>
+      <textarea id="driveTokenText" placeholder="Paste your token.json content here"></textarea>
+
+      <div style="margin:0.4rem 0;font-size:0.8rem;color:#aaa;">
+        Or upload a <code>token.json</code> file:
+      </div>
+      <input type="file" id="driveTokenFile" accept=".json,application/json" />
+
+      <div id="driveModalStatus" class="status"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="closeDriveModal()">Cancel</button>
+      <button onclick="saveDriveConfig()">Enable</button>
+    </div>
+  </div>
+</div>
