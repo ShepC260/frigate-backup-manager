@@ -1,1 +1,384 @@
-<html><body>Frigate Backup Manager</body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Frigate Backup Manager</title>
+  <style>
+    body {
+      background: #101010;
+      color: #f0f0f0;
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 1rem;
+    }
+    h1 {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: #18b09f;
+      font-weight: 700;
+      font-size: 1.8rem;
+      margin-bottom: 1.2rem;
+    }
+    h1 img {
+      height: 40px;
+      width: auto;
+      border-radius: 8px;
+      box-shadow: 0 0 6px #000a;
+      vertical-align: middle;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      background: #181818;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 0 10px #000a;
+    }
+    h2 {
+      color: #f5f5f5;
+      font-weight: 600;
+    }
+    button {
+      background: #18b09f;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      padding: 0.4rem 0.8rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+      margin: 0.2rem 0.1rem;
+    }
+    button:hover {
+      background: #14a095;
+    }
+    select,
+    input {
+      background: #202020;
+      color: #fff;
+      border: 1px solid #444;
+      border-radius: 6px;
+      padding: 0.3rem;
+    }
+    .status {
+      margin-top: 0.5rem;
+      font-size: 0.9em;
+      color: #aaa;
+    }
+    .error {
+      color: #ff5555;
+    }
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      font-size: 0.95rem;
+    }
+    .status-key {
+      color: #bbb;
+    }
+    .status-value {
+      font-weight: 600;
+    }
+    .badge {
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .badge-green {
+      background: #18b09f;
+      color: #000;
+    }
+    .badge-red {
+      background: #d9534f;
+      color: #000;
+    }
+    .badge-yellow {
+      background: #d9c84e;
+      color: #000;
+    }
+    .status-separator {
+      border-bottom: 1px solid #1f1f1f;
+      margin: 8px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>
+    <img src="/static/logo.png" alt="Frigate Backup Manager" />
+    Frigate Backup Manager
+  </h1>
+
+  <div class="grid">
+    <!-- System Status -->
+    <div class="card">
+      <h2>System Status</h2>
+      <div id="systemStatusContainer"></div>
+      <div class="status" id="statusTime"></div>
+    </div>
+
+    <!-- Backups -->
+    <div class="card">
+      <h2>Backups</h2>
+      <div id="backupList">Loading...</div>
+      <button onclick="runBackup()">Run Backup Now</button>
+      <button onclick="loadBackups()">Refresh</button>
+      <br /><br />
+      <select id="restoreFile" style="width: 100%; max-width: 100%"></select>
+      <button onclick="restoreSelectedBackup()">Restore</button>
+      <div id="backupStatus" class="status"></div>
+    </div>
+
+    <!-- Google Drive -->
+    <div class="card">
+      <h2>Google Drive</h2>
+      <div id="gdriveStatus">Loading...</div>
+      <button onclick="refreshDrive()">Refresh</button>
+    </div>
+
+    <!-- System Actions -->
+    <div class="card">
+      <h2>System Actions</h2>
+      <button onclick="runSystemAction('update_os')">Full OS Update</button>
+      <button onclick="runSystemAction('restart_frigate')">
+        Restart Frigate
+      </button>
+      <button onclick="runSystemAction('reboot')">Reboot System</button>
+      <div id="actionStatus" class="status"></div>
+    </div>
+
+    <!-- Hostname -->
+    <div class="card">
+      <h2>Hostname</h2>
+      <input
+        id="hostnameInput"
+        placeholder="Enter new hostname"
+        style="width: 100%; margin-bottom: 0.4rem"
+      />
+      <button onclick="applyHostname()">Set Hostname</button>
+      <div style="font-size: 0.8rem; color: #aaa; margin-top: 4px">
+        After changing hostname, click Reboot to apply.
+      </div>
+      <div id="hostnameStatus" class="status"></div>
+    </div>
+  </div>
+
+  <script>
+    async function loadStatus() {
+      try {
+        const res = await fetch("/api/status");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        const sys = data.system;
+
+        let coralBadge =
+          '<span class="badge badge-red">Not detected</span>';
+        if (sys.coral && sys.coral.toLowerCase().includes("detect")) {
+          coralBadge = '<span class="badge badge-green">Detected</span>';
+        }
+
+        let frigateBadge =
+          sys.frigate && sys.frigate !== "not found"
+            ? '<span class="badge badge-green">' + sys.frigate + "</span>"
+            : '<span class="badge badge-red">Unavailable</span>';
+
+        const html = `
+          <div class="status-row">
+            <span class="status-key">Hostname</span>
+            <span class="status-value">${sys.hostname}</span>
+          </div>
+          <div class="status-separator"></div>
+          <div class="status-row">
+            <span class="status-key">OS</span>
+            <span class="status-value">${sys.os}</span>
+          </div>
+          <div class="status-row">
+            <span class="status-key">Frigate</span>
+            <span class="status-value">${frigateBadge}</span>
+          </div>
+          <div class="status-row">
+            <span class="status-key">Coral</span>
+            <span class="status-value">${coralBadge}</span>
+          </div>
+        `;
+
+        document.getElementById("systemStatusContainer").innerHTML = html;
+        document.getElementById("statusTime").innerText =
+          "Updated: " + data.timestamp;
+      } catch (e) {
+        document.getElementById("systemStatusContainer").innerHTML =
+          "<span class='error'>Failed to load system status</span>";
+        console.error(e);
+      }
+    }
+
+    async function loadBackups() {
+      try {
+        const res = await fetch("/api/backups");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        const files = data.files || [];
+        const list = document.getElementById("backupList");
+        const select = document.getElementById("restoreFile");
+
+        list.innerHTML = files.length
+          ? files.map((f) => `<div>${f}</div>`).join("")
+          : "<i>No backups found</i>";
+
+        select.innerHTML = files
+          .map((f) => `<option value="${f}">${f}</option>`)
+          .join("");
+      } catch (e) {
+        console.error("loadBackups failed", e);
+        document.getElementById("backupList").innerHTML =
+          "<span class='error'>Failed to load backups</span>";
+      }
+    }
+
+    async function runBackup() {
+      const status = document.getElementById("backupStatus");
+      status.textContent = "Running backup...";
+      try {
+        const res = await fetch("/api/backup/run", { method: "POST" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        status.textContent = "✅ Backup complete!";
+        loadBackups();
+      } catch (e) {
+        status.textContent = "❌ Backup failed";
+        console.error(e);
+      }
+    }
+
+    async function restoreSelectedBackup() {
+      const file = document.getElementById("restoreFile").value;
+      const status = document.getElementById("backupStatus");
+      if (!file) {
+        status.textContent = "Select a backup first";
+        return;
+      }
+      status.textContent = "Restoring " + file + "...";
+      try {
+        const res = await fetch("/api/restore", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: file }),
+        });
+        const data = await res.json();
+        status.textContent = data.ok
+          ? "✅ Restore successful"
+          : "❌ Restore failed";
+      } catch (e) {
+        status.textContent = "❌ Restore error";
+        console.error(e);
+      }
+    }
+
+    async function refreshDrive() {
+      const el = document.getElementById("gdriveStatus");
+      el.innerText = "Loading...";
+      try {
+        const res = await fetch("/api/gdrive/status");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+
+        let enabledBadge = data.enabled
+          ? '<span class="badge badge-green">Enabled</span>'
+          : '<span class="badge badge-yellow">Disabled</span>';
+
+        let html = `
+          <div>Status: ${data.message || "Unknown"}</div>
+          <div>Google Drive: ${enabledBadge}</div>
+        `;
+
+        if (!data.configured) {
+          html += "<div>⚠️ Token missing or invalid</div>";
+        } else {
+          html += `<div>Account: ${data.email || "Unknown"}</div>`;
+          html += `<div>Token path: ${data.token_path}</div>`;
+        }
+
+        el.innerHTML = html;
+      } catch (e) {
+        console.warn("Drive status error", e);
+        el.innerHTML =
+          "<div class='error'>Drive unavailable or token missing</div>";
+      }
+    }
+
+    async function runSystemAction(action) {
+      const status = document.getElementById("actionStatus");
+      status.textContent = "Running " + action + "...";
+
+      let endpoint = "";
+      if (action === "update_os") endpoint = "/api/system/update_os";
+      else if (action === "restart_frigate")
+        endpoint = "/api/system/restart_frigate";
+      else if (action === "reboot") endpoint = "/api/system/reboot";
+      else return;
+
+      try {
+        const res = await fetch(endpoint, { method: "POST" });
+        const data = await res.json();
+        status.textContent = data.ok
+          ? `✅ ${action} complete`
+          : `❌ ${action} failed`;
+      } catch (e) {
+        status.textContent = "❌ Action failed";
+        console.error(e);
+      }
+    }
+
+    async function applyHostname() {
+      const box = document.getElementById("hostnameInput");
+      const status = document.getElementById("hostnameStatus");
+      const newName = box.value.trim();
+
+      if (!newName) {
+        status.textContent = "Hostname cannot be empty.";
+        return;
+      }
+
+      status.textContent = "Applying hostname...";
+
+      try {
+        const res = await fetch("/api/system/set_hostname", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hostname: newName }),
+        });
+
+        const data = await res.json();
+
+        if (data.ok) {
+          status.textContent =
+            `✅ Hostname changed to "${data.hostname}". Reboot required.`;
+          status.style.color = "#ffcc00";
+        } else {
+          status.textContent = `❌ Failed: ${data.error}`;
+          status.style.color = "#ff5555";
+        }
+      } catch (e) {
+        status.textContent = "❌ Error setting hostname.";
+        status.style.color = "#ff5555";
+        console.error(e);
+      }
+
+      setTimeout(loadStatus, 1000);
+    }
+
+    // Initial load & refresh timers
+    loadStatus();
+    loadBackups();
+    refreshDrive();
+    setInterval(loadStatus, 10000);
+    setInterval(loadBackups, 60000);
+  </script>
+</body>
+</html>

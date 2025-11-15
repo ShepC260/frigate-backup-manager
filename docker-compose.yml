@@ -1,3 +1,15 @@
 services:
   frigate-backup-manager:
+    container_name: frigate-backup-manager
     build: .
+    image: frigate-backup-manager:latest
+    privileged: true          # needed for reboot/hostnamectl
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    volumes:
+      - ./data:/data
+      - ./logs:/logs
+      - ./backups:/backups
+      # mount frigate config if you want it backed up, e.g.:
+      - /home/frigate/frigate:/config:ro
