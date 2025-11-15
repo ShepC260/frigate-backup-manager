@@ -28,11 +28,13 @@
       box-shadow: 0 0 6px #000a;
       vertical-align: middle;
     }
-    .grid {
+
+    .layout {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      grid-template-columns: minmax(0, 2.5fr) minmax(280px, 1fr);
       gap: 1rem;
     }
+
     .card {
       background: #181818;
       border: 1px solid #333;
@@ -40,10 +42,13 @@
       padding: 1rem;
       box-shadow: 0 0 10px #000a;
     }
+
     h2 {
       color: #f5f5f5;
       font-weight: 600;
+      margin-top: 0;
     }
+
     button {
       background: #18b09f;
       color: #000;
@@ -54,43 +59,34 @@
       font-weight: 600;
       transition: all 0.2s;
       margin: 0.2rem 0.1rem;
+      font-size: 0.9rem;
     }
     button:hover {
       background: #14a095;
     }
-    select,
-    input {
-      background: #202020;
-      color: #fff;
-      border: 1px solid #444;
-      border-radius: 6px;
-      padding: 0.3rem;
+    button.secondary {
+      background: #333;
+      color: #f0f0f0;
     }
+    button.secondary:hover {
+      background: #444;
+    }
+
     .status {
-      margin-top: 0.5rem;
+      margin-top: 0.4rem;
       font-size: 0.9em;
       color: #aaa;
     }
     .error {
       color: #ff5555;
     }
-    .status-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 4px 0;
-      font-size: 0.95rem;
-    }
-    .status-key {
-      color: #bbb;
-    }
-    .status-value {
-      font-weight: 600;
-    }
+
     .badge {
       padding: 2px 8px;
-      border-radius: 6px;
-      font-size: 0.8rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
       font-weight: 600;
+      display: inline-block;
     }
     .badge-green {
       background: #18b09f;
@@ -104,9 +100,174 @@
       background: #d9c84e;
       color: #000;
     }
-    .status-separator {
-      border-bottom: 1px solid #1f1f1f;
-      margin: 8px 0;
+    .badge-grey {
+      background: #555;
+      color: #eee;
+    }
+
+    .backup-list {
+      margin-top: 0.5rem;
+      border-radius: 8px;
+      border: 1px solid #252525;
+      overflow: hidden;
+    }
+    .backup-row {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 0.7rem;
+      border-bottom: 1px solid #242424;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+    }
+    .backup-row:last-child {
+      border-bottom: none;
+    }
+    .backup-icon {
+      font-size: 1.1rem;
+      flex: 0 0 auto;
+    }
+    .backup-main {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .backup-title-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      align-items: baseline;
+    }
+    .backup-name {
+      font-weight: 600;
+      color: #f0f0f0;
+    }
+    .backup-date {
+      font-size: 0.8rem;
+      color: #aaa;
+    }
+    .backup-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: 0.15rem;
+      font-size: 0.8rem;
+      color: #ccc;
+    }
+    .meta-label {
+      color: #888;
+    }
+    .meta-value {
+      font-weight: 500;
+    }
+
+    .backup-actions {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .icon-button {
+      background: transparent;
+      border: none;
+      color: #f0f0f0;
+      padding: 0.2rem;
+      cursor: pointer;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-button:hover {
+      background: #2a2a2a;
+    }
+    .icon-button svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      margin-top: 0.4rem;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 20px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #444;
+      transition: 0.2s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.2s;
+      border-radius: 50%;
+    }
+
+    .switch input:checked + .slider {
+      background-color: #18b09f;
+    }
+
+    .switch input:checked + .slider:before {
+      transform: translateX(18px);
+    }
+
+    .system-list {
+      font-size: 0.9rem;
+    }
+    .system-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 0.15rem 0;
+    }
+    .system-label {
+      color: #aaa;
+    }
+    .system-value {
+      font-weight: 500;
+    }
+    .system-icons {
+      display: inline-flex;
+      gap: 0.25rem;
+      align-items: center;
+    }
+    .system-icons svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .system-actions {
+      margin-top: 0.6rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
     }
 
     /* Last command output panel */
@@ -160,6 +321,76 @@
     .footer-links a:hover {
       text-decoration: underline;
     }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal {
+      background: #181818;
+      border-radius: 12px;
+      border: 1px solid #333;
+      max-width: 480px;
+      width: 95%;
+      padding: 1rem;
+      box-shadow: 0 0 25px #000;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .modal-header h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+    .modal-close {
+      cursor: pointer;
+      font-size: 1.1rem;
+      color: #aaa;
+    }
+    .modal-body {
+      font-size: 0.9rem;
+      margin-bottom: 0.7rem;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-top: 0.4rem;
+    }
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      background: #202020;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #f0f0f0;
+      padding: 0.4rem;
+      font-family: monospace;
+      font-size: 0.85rem;
+    }
+    input[type="text"] {
+      width: 100%;
+      background: #202020;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #f0f0f0;
+      padding: 0.35rem;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -168,79 +399,47 @@
     Frigate Backup Manager
   </h1>
 
-  <div class="grid">
-    <!-- System Status -->
-    <div class="card">
-      <h2>System Status</h2>
-      <div id="systemStatusContainer"></div>
-      <div class="status" id="statusTime"></div>
-    </div>
-
-    <!-- Backups -->
+  <div class="layout">
+    <!-- Main backups card -->
     <div class="card">
       <h2>Backups</h2>
-      <div id="backupList">Loading...</div>
-      <button onclick="runBackup()">Run Backup Now</button>
-      <button onclick="loadBackups()">Refresh</button>
-      <br /><br />
-      <select id="restoreFile" style="width: 100%; max-width: 100%"></select>
-      <button onclick="restoreSelectedBackup()">Restore</button>
-      <div id="backupStatus" class="status"></div>
-    </div>
-
-    <!-- Google Drive -->
-    <div class="card">
-      <h2>Google Drive</h2>
-      <div id="gdriveStatus">Loading...</div>
-      <button onclick="refreshDrive()">Refresh</button>
-    </div>
-
-    <!-- System Actions -->
-    <div class="card">
-      <h2>System Actions</h2>
-      <button onclick="runSystemAction('update_os')">Full OS Update</button>
-      <button onclick="runSystemAction('restart_frigate')">
-        Restart Frigate
-      </button>
-      <button onclick="runSystemAction('reboot')">Reboot System</button>
-      <div id="actionStatus" class="status"></div>
-    </div>
-
-    <!-- Hostname -->
-    <div class="card">
-      <h2>Hostname</h2>
-      <input
-        id="hostnameInput"
-        placeholder="Enter new hostname"
-        style="width: 100%; margin-bottom: 0.4rem"
-      />
-      <button onclick="applyHostname()">Set Hostname</button>
-      <div style="font-size: 0.8rem; color: #aaa; margin-top: 4px">
-        After changing hostname, click Reboot to apply.
+      <div>
+        <button onclick="runBackup()">Run Backup Now</button>
+        <button class="secondary" onclick="loadBackups()">Refresh</button>
       </div>
-      <div id="hostnameStatus" class="status"></div>
+      <div id="backupStatus" class="status"></div>
+      <div id="backupList" class="backup-list">
+        <div style="padding: 0.7rem;">Loading backups...</div>
+      </div>
     </div>
 
-    <!-- Updates -->
+    <!-- System card -->
     <div class="card">
-      <h2>Updates</h2>
-      <div id="updateInfo">Loading...</div>
-      <div style="margin-top: 0.5rem; margin-bottom: 0.3rem;">
-        <label style="font-size: 0.9rem;">
-          Channel:
-          <select id="updateChannel" onchange="changeUpdateChannel()">
-            <option value="main">Main (dev)</option>
-            <option value="releases">Releases only</option>
-            <option value="dev">Development</option>
-          </select>
+      <h2>System</h2>
+      <div class="system-list" id="systemStatusContainer">
+        <!-- filled by JS -->
+      </div>
+      <div class="status" id="statusTime"></div>
+
+      <div class="system-actions">
+        <button onclick="runSystemAction('update_os')">Full OS Update</button>
+        <button onclick="runSystemAction('restart_frigate')">Restart Frigate</button>
+        <button class="secondary" onclick="runSystemAction('reboot')">Reboot System</button>
+      </div>
+
+      <div class="toggle-row" style="margin-top:0.8rem;">
+        <span>Google Drive Sync</span>
+        <label class="switch">
+          <input type="checkbox" id="gdriveToggle" onchange="toggleDriveEnabled()" />
+          <span class="slider"></span>
         </label>
       </div>
-      <button onclick="loadUpdateStatus()">Check for Updates</button>
-      <button onclick="downloadUpdate()">Download Latest</button>
-      <div id="updateStatus" class="status"></div>
-      <div style="font-size: 0.8rem; color: #aaa; margin-top: 4px">
-        Downloaded updates are stored under <code>/data/updates</code>.
-        To apply them, rebuild on the host using <code>./update.sh</code>.
+      <div class="status" id="gdriveStatusShort"></div>
+      <button class="secondary" style="margin-top:0.3rem;" onclick="openDriveModal()">Configure Google Drive</button>
+
+      <div style="margin-top:0.7rem;">
+        <button class="secondary" onclick="openHostnameModal()">Set Hostname</button>
+        <button class="secondary" onclick="openUpdateModal()">Update Details</button>
       </div>
     </div>
   </div>
@@ -260,8 +459,100 @@
     📄 <a href="/logs" target="_blank">View full logs</a>
   </div>
 
+  <!-- Restore modal -->
+  <div class="modal-backdrop" id="restoreModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Restore Backup</h3>
+        <span class="modal-close" onclick="closeRestoreModal()">✕</span>
+      </div>
+      <div class="modal-body" id="restoreModalBody">
+        <!-- filled by JS -->
+      </div>
+      <div class="modal-footer">
+        <button class="secondary" onclick="closeRestoreModal()">Cancel</button>
+        <button onclick="confirmRestore()">Restore</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hostname modal -->
+  <div class="modal-backdrop" id="hostnameModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Set Hostname</h3>
+        <span class="modal-close" onclick="closeHostnameModal()">✕</span>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom:0.4rem;">
+          <label for="hostnameInput">New hostname</label>
+        </div>
+        <input id="hostnameInput" type="text" placeholder="e.g. frigate-3070" />
+        <div style="font-size:0.8rem;color:#aaa;margin-top:0.4rem;">
+          ⚠ Changing hostname requires a reboot.
+        </div>
+        <div id="hostnameStatus" class="status"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="secondary" onclick="closeHostnameModal()">Cancel</button>
+        <button onclick="applyHostname()">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Google Drive modal -->
+  <div class="modal-backdrop" id="driveModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Google Drive Configuration</h3>
+        <span class="modal-close" onclick="closeDriveModal()">✕</span>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom:0.4rem;">
+          <strong>Paste token JSON:</strong>
+        </div>
+        <textarea id="driveTokenText" placeholder="Paste your token.json content here"></textarea>
+        <div style="margin:0.4rem 0;font-size:0.8rem;color:#aaa;">
+          Or upload a <code>token.json</code> file:
+        </div>
+        <input type="file" id="driveTokenFile" accept=".json,application/json" />
+        <div class="toggle-row" style="margin-top:0.6rem;">
+          <span>Enable Google Drive Sync</span>
+          <label class="switch">
+            <input type="checkbox" id="driveEnabledToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div id="driveModalStatus" class="status"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="secondary" onclick="closeDriveModal()">Cancel</button>
+        <button onclick="saveDriveConfig()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Update modal -->
+  <div class="modal-backdrop" id="updateModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Update Details</h3>
+        <span class="modal-close" onclick="closeUpdateModal()">✕</span>
+      </div>
+      <div class="modal-body" id="updateModalBody">
+        Loading...
+      </div>
+      <div class="modal-footer">
+        <button class="secondary" onclick="closeUpdateModal()">Close</button>
+        <button onclick="downloadUpdate()">Download Latest</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let lastOutputCollapsed = false;
+    let restoreTargetFile = null;
+    let restoreTargetName = null;
 
     function toggleLastOutput() {
       const body = document.getElementById("lastOutputBody");
@@ -284,52 +575,113 @@
       body.scrollTop = body.scrollHeight;
     }
 
+    // -------- System & status --------
+
     async function loadStatus() {
       try {
         const res = await fetch("/api/status");
         if (!res.ok) throw new Error("HTTP " + res.status);
         const data = await res.json();
-        const sys = data.system;
+        const sys = data.system || {};
+        const drive = data.drive || {};
+        const upd = data.update || {};
 
-        let coralBadge =
-          '<span class="badge badge-red">Not detected</span>';
-        if (sys.coral && sys.coral.toLowerCase().includes("detect")) {
-          coralBadge = '<span class="badge badge-green">Detected</span>';
+        const systemEl = document.getElementById("systemStatusContainer");
+        const timeEl = document.getElementById("statusTime");
+
+        const frigateIcon = sys.frigate_ok
+          ? '<span class="badge badge-green">Frigate ✓</span>'
+          : '<span class="badge badge-red">Frigate ✖</span>';
+
+        const coralIcon = sys.coral_ok
+          ? '<span class="badge badge-green">Coral ✓</span>'
+          : '<span class="badge badge-red">Coral ✖</span>';
+
+        let driveBadge = "";
+        if (!drive.enabled) {
+          driveBadge = '<span class="badge badge-grey">Drive: Off</span>';
+        } else if (!drive.configured) {
+          driveBadge = '<span class="badge badge-yellow">Drive: Not configured</span>';
+        } else {
+          driveBadge = '<span class="badge badge-green">Drive: Connected</span>';
         }
 
-        let frigateBadge =
-          sys.frigate && sys.frigate !== "not found"
-            ? '<span class="badge badge-green">' + sys.frigate + "</span>"
-            : '<span class="badge badge-red">Unavailable</span>';
+        let updateBadge = "";
+        if (upd.available) {
+          updateBadge = '<span class="badge badge-yellow">Update available</span>';
+        } else {
+          updateBadge = '<span class="badge badge-green">Up to date</span>';
+        }
 
-        const html = `
-          <div class="status-row">
-            <span class="status-key">Hostname</span>
-            <span class="status-value">${sys.hostname}</span>
+        const restartBadge = sys.restart_required
+          ? '<span class="badge badge-yellow">Restart recommended</span>'
+          : "";
+
+        systemEl.innerHTML = `
+          <div class="system-row">
+            <span class="system-label">Hostname</span>
+            <span class="system-value">${sys.hostname || "-"}</span>
           </div>
-          <div class="status-separator"></div>
-          <div class="status-row">
-            <span class="status-key">OS</span>
-            <span class="status-value">${sys.os}</span>
+          <div class="system-row">
+            <span class="system-label">OS</span>
+            <span class="system-value">${sys.os || "-"}</span>
           </div>
-          <div class="status-row">
-            <span class="status-key">Frigate</span>
-            <span class="status-value">${frigateBadge}</span>
+          <div class="system-row">
+            <span class="system-label">Frigate</span>
+            <span class="system-value">${frigateIcon}</span>
           </div>
-          <div class="status-row">
-            <span class="status-key">Coral</span>
-            <span class="status-value">${coralBadge}</span>
+          <div class="system-row">
+            <span class="system-label">Coral</span>
+            <span class="system-value">${coralIcon}</span>
+          </div>
+          <div class="system-row">
+            <span class="system-label">Google Drive</span>
+            <span class="system-value">${driveBadge}</span>
+          </div>
+          <div class="system-row">
+            <span class="system-label">Updates</span>
+            <span class="system-value">${updateBadge}</span>
+          </div>
+          <div class="system-row">
+            <span class="system-label">Status</span>
+            <span class="system-value">${restartBadge || "-"}</span>
           </div>
         `;
 
-        document.getElementById("systemStatusContainer").innerHTML = html;
-        document.getElementById("statusTime").innerText =
-          "Updated: " + data.timestamp;
+        timeEl.textContent = "Updated: " + (data.timestamp || "");
+
+        // Drive toggle short
+        const gdriveShort = document.getElementById("gdriveStatusShort");
+        const toggle = document.getElementById("gdriveToggle");
+        if (drive.enabled) {
+          toggle.checked = true;
+        } else {
+          toggle.checked = false;
+        }
+        let msg = drive.message || "";
+        if (drive.email) {
+          msg += msg ? ` (Account: ${drive.email})` : `Account: ${drive.email}`;
+        }
+        gdriveShort.textContent = msg;
       } catch (e) {
+        console.error(e);
         document.getElementById("systemStatusContainer").innerHTML =
           "<span class='error'>Failed to load system status</span>";
-        console.error(e);
       }
+    }
+
+    // -------- Backups --------
+
+    function formatSize(bytes) {
+      if (!bytes && bytes !== 0) return "-";
+      const units = ["B", "KB", "MB", "GB", "TB"];
+      let i = 0;
+      let v = bytes;
+      while (v >= 1024 && i < units.length - 1) {
+        v /= 1024;
+        i++;
+      }
+      return v.toFixed(1) + " " + units[i];
     }
 
     async function loadBackups() {
@@ -339,19 +691,53 @@
         const data = await res.json();
         const files = data.files || [];
         const list = document.getElementById("backupList");
-        const select = document.getElementById("restoreFile");
 
-        list.innerHTML = files.length
-          ? files.map((f) => `<div>${f}</div>`).join("")
-          : "<i>No backups found</i>";
+        if (!files.length) {
+          list.innerHTML = '<div style="padding:0.7rem;"><i>No backups found</i></div>';
+          return;
+        }
 
-        select.innerHTML = files
-          .map((f) => `<option value="${f}">${f}</option>`)
+        list.innerHTML = files
+          .map((b) => {
+            const driveField =
+              b.drive === "na"
+                ? "N/A"
+                : b.drive
+                ? "✓"
+                : "✖";
+            const localField = b.local ? "✓" : "✖";
+
+            return `
+              <div class="backup-row">
+                <div class="backup-icon">💾</div>
+                <div class="backup-main">
+                  <div class="backup-title-line">
+                    <span class="backup-name">${b.name || b.filename}</span>
+                    <span class="backup-date">${b.timestamp || ""}</span>
+                  </div>
+                  <div class="backup-meta">
+                    <span><span class="meta-label">File:</span> <span class="meta-value">${b.filename}</span></span>
+                    <span><span class="meta-label">Size:</span> <span class="meta-value">${formatSize(b.size_bytes)}</span></span>
+                    <span><span class="meta-label">Local:</span> <span class="meta-value">${localField}</span></span>
+                    <span><span class="meta-label">Drive:</span> <span class="meta-value">${driveField}</span></span>
+                  </div>
+                </div>
+                <div class="backup-actions">
+                  <button class="icon-button" title="Restore" onclick="openRestoreModal('${b.filename}', '${b.name || b.filename}')">
+                    ⟳
+                  </button>
+                  <button class="icon-button" title="Download" onclick="downloadBackup('${b.filename}')">
+                    ⬇
+                  </button>
+                </div>
+              </div>
+            `;
+          })
           .join("");
       } catch (e) {
         console.error("loadBackups failed", e);
         document.getElementById("backupList").innerHTML =
-          "<span class='error'>Failed to load backups</span>";
+          '<div style="padding:0.7rem;" class="error">Failed to load backups</div>';
       }
     }
 
@@ -378,78 +764,186 @@
       }
     }
 
-    async function restoreSelectedBackup() {
-      const file = document.getElementById("restoreFile").value;
-      const status = document.getElementById("backupStatus");
-      if (!file) {
-        const msg = "Select a backup first.";
-        status.textContent = msg;
-        updateLastOutput(msg);
+    function openRestoreModal(filename, name) {
+      restoreTargetFile = filename;
+      restoreTargetName = name;
+      const modal = document.getElementById("restoreModal");
+      const body = document.getElementById("restoreModalBody");
+      body.innerHTML = `
+        <p>You are about to restore backup:</p>
+        <p><strong>${name}</strong></p>
+        <p style="font-size:0.85rem;color:#ccc;">File: ${filename}</p>
+        <p style="margin-top:0.6rem;font-size:0.85rem;color:#f3c969;">
+          ⚠ This will overwrite the current configuration.
+          Frigate should be restarted after the restore is complete.
+        </p>
+      `;
+      modal.style.display = "flex";
+    }
+
+    function closeRestoreModal() {
+      restoreTargetFile = null;
+      restoreTargetName = null;
+      document.getElementById("restoreModal").style.display = "none";
+    }
+
+    async function confirmRestore() {
+      if (!restoreTargetFile) {
+        closeRestoreModal();
         return;
       }
-      status.textContent = "Restoring " + file + "...";
-      updateLastOutput("Restore requested for " + file + "...");
+      updateLastOutput("Restore requested for " + restoreTargetFile + "...");
+      const status = document.getElementById("backupStatus");
+      status.textContent = "Restoring " + restoreTargetFile + "...";
+
       try {
         const res = await fetch("/api/restore", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename: file }),
+          body: JSON.stringify({ filename: restoreTargetFile }),
         });
         const data = await res.json();
         const msg = data.message || (data.ok ? "Restore successful." : "Restore failed.");
         status.textContent = data.ok ? "✅ " + msg : "❌ " + msg;
         updateLastOutput(msg);
+        closeRestoreModal();
+        loadStatus();
       } catch (e) {
         const msg = "Restore error: " + e;
         status.textContent = "❌ Restore error";
         updateLastOutput(msg);
         console.error(e);
+        closeRestoreModal();
       }
     }
 
-    async function refreshDrive() {
-      const el = document.getElementById("gdriveStatus");
-      el.innerText = "Loading...";
+    function downloadBackup(filename) {
+      updateLastOutput("Downloading backup: " + filename);
+      window.open("/api/backups/download?file=" + encodeURIComponent(filename), "_blank");
+    }
+
+    // -------- Google Drive --------
+
+    async function toggleDriveEnabled() {
+      const toggle = document.getElementById("gdriveToggle");
+      const enabled = toggle.checked;
+      updateLastOutput("Toggling Google Drive to " + (enabled ? "ON" : "OFF"));
       try {
-        const res = await fetch("/api/gdrive/status");
-        if (!res.ok) throw new Error("HTTP " + res.status);
+        const res = await fetch("/api/gdrive/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled }),
+        });
         const data = await res.json();
-
-        let enabledBadge = data.enabled
-          ? '<span class="badge badge-green">Enabled</span>'
-          : '<span class="badge badge-yellow">Disabled</span>';
-
-        let html = `
-          <div>Status: ${data.message || "Unknown"}</div>
-          <div>Google Drive: ${enabledBadge}</div>
-        `;
-
-        if (!data.configured) {
-          html += "<div>⚠️ Token missing or invalid</div>";
+        if (!res.ok || !data.ok) {
+          document.getElementById("gdriveStatusShort").textContent =
+            data.message || "Failed to update Drive config.";
         } else {
-          html += `<div>Account: ${data.email || "Unknown"}</div>`;
-          html += `<div>Token path: ${data.token_path}</div>`;
+          document.getElementById("gdriveStatusShort").textContent =
+            data.message || "Drive config updated.";
+        }
+        loadStatus();
+        loadBackups();
+      } catch (e) {
+        console.error(e);
+        document.getElementById("gdriveStatusShort").textContent =
+          "Drive toggle failed.";
+      }
+    }
+
+    function openDriveModal() {
+      document.getElementById("driveModalStatus").textContent = "";
+      document.getElementById("driveTokenText").value = "";
+      document.getElementById("driveTokenFile").value = "";
+      // Seed toggle with current state
+      fetch("/api/gdrive/status")
+        .then((res) => res.json())
+        .then((data) => {
+          document.getElementById("driveEnabledToggle").checked = !!data.enabled;
+        })
+        .catch(() => {});
+      document.getElementById("driveModal").style.display = "flex";
+    }
+
+    function closeDriveModal() {
+      document.getElementById("driveModal").style.display = "none";
+    }
+
+    async function saveDriveConfig() {
+      const enabled = document.getElementById("driveEnabledToggle").checked;
+      const tokenText = document.getElementById("driveTokenText").value.trim();
+      const statusEl = document.getElementById("driveModalStatus");
+      statusEl.textContent = "Saving Drive configuration...";
+      updateLastOutput("Saving Google Drive configuration...");
+
+      try {
+        if (tokenText) {
+          // Send JSON
+          const res = await fetch("/api/gdrive/config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ enabled, token_json: tokenText }),
+          });
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            statusEl.textContent = "❌ " + (data.message || "Failed to save config.");
+            updateLastOutput(data.message || "Drive config failed.");
+          } else {
+            statusEl.textContent = "✅ " + (data.message || "Drive configuration updated.");
+            updateLastOutput(data.message || "Drive configuration updated.");
+          }
+        } else {
+          // No token text; maybe file
+          const fileInput = document.getElementById("driveTokenFile");
+          if (fileInput.files.length > 0) {
+            const fd = new FormData();
+            fd.append("file", fileInput.files[0]);
+            const res = await fetch("/api/gdrive/upload_token", {
+              method: "POST",
+              body: fd,
+            });
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+              statusEl.textContent = "❌ " + (data.message || "Failed to upload token.");
+              updateLastOutput(data.message || "Token upload failed.");
+            } else {
+              statusEl.textContent = "✅ " + (data.message || "Token uploaded.");
+              updateLastOutput(data.message || "Token uploaded.");
+            }
+          } else {
+            // Just change enabled state
+            const res = await fetch("/api/gdrive/config", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ enabled }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+              statusEl.textContent = "❌ " + (data.message || "Failed to update Drive.");
+              updateLastOutput(data.message || "Drive toggle failed.");
+            } else {
+              statusEl.textContent = "✅ " + (data.message || "Drive updated.");
+              updateLastOutput(data.message || "Drive updated.");
+            }
+          }
         }
 
-        el.innerHTML = html;
-        updateLastOutput("Google Drive status checked: " + (data.message || "Unknown"));
+        loadStatus();
+        loadBackups();
       } catch (e) {
-        console.warn("Drive status error", e);
-        el.innerHTML =
-          "<div class='error'>Drive unavailable or token missing</div>";
-        updateLastOutput("Google Drive status check failed.");
+        statusEl.textContent = "❌ Error saving Drive config.";
+        updateLastOutput("Drive config error: " + e);
+        console.error(e);
       }
     }
 
-    async function runSystemAction(action) {
-      const status = document.getElementById("actionStatus");
-      status.textContent = "Running " + action + "...";
-      updateLastOutput("System action requested: " + action);
+    // -------- System actions --------
 
+    async function runSystemAction(action) {
+      updateLastOutput("System action requested: " + action);
       let endpoint = "";
       if (action === "update_os") endpoint = "/api/system/update_os";
-      else if (action === "restart_frigate")
-        endpoint = "/api/system/restart_frigate";
+      else if (action === "restart_frigate") endpoint = "/api/system/restart_frigate";
       else if (action === "reboot") endpoint = "/api/system/reboot";
       else return;
 
@@ -457,14 +951,25 @@
         const res = await fetch(endpoint, { method: "POST" });
         const data = await res.json();
         const msg = data.message || (data.ok ? "Action completed." : "Action failed.");
-        status.textContent = data.ok ? "✅ " + msg : "❌ " + msg;
         updateLastOutput(msg);
+        loadStatus();
       } catch (e) {
         const msg = "Action failed: " + e;
-        status.textContent = "❌ Action failed";
         updateLastOutput(msg);
         console.error(e);
       }
+    }
+
+    // -------- Hostname modal logic --------
+
+    function openHostnameModal() {
+      document.getElementById("hostnameStatus").textContent = "";
+      document.getElementById("hostnameInput").value = "";
+      document.getElementById("hostnameModal").style.display = "flex";
+    }
+
+    function closeHostnameModal() {
+      document.getElementById("hostnameModal").style.display = "none";
     }
 
     async function applyHostname() {
@@ -490,7 +995,8 @@
         });
 
         const data = await res.json();
-        const msg = data.message || (data.ok ? "Hostname changed." : "Hostname change failed.");
+        const msg =
+          data.message || (data.ok ? "Hostname changed." : "Hostname change failed.");
 
         if (data.ok) {
           status.textContent = `✅ Hostname changed to "${data.hostname}". Reboot required.`;
@@ -500,6 +1006,7 @@
           status.style.color = "#ff5555";
         }
         updateLastOutput(msg);
+        loadStatus();
       } catch (e) {
         const msg = "Error setting hostname: " + e;
         status.textContent = "❌ Error setting hostname.";
@@ -507,136 +1014,70 @@
         updateLastOutput(msg);
         console.error(e);
       }
-
-      setTimeout(loadStatus, 1000);
     }
 
-    // ----- Update card logic -----
+    // -------- Update modal --------
 
-    async function loadUpdateStatus() {
-      const info = document.getElementById("updateInfo");
-      const statusEl = document.getElementById("updateStatus");
+    function openUpdateModal() {
+      document.getElementById("updateModalBody").textContent = "Loading...";
+      document.getElementById("updateModal").style.display = "flex";
+      loadUpdateModal();
+    }
+
+    function closeUpdateModal() {
+      document.getElementById("updateModal").style.display = "none";
+    }
+
+    async function loadUpdateModal() {
       try {
         const res = await fetch("/api/update/status");
-        if (!res.ok) throw new Error("HTTP " + res.status);
         const data = await res.json();
+        const body = document.getElementById("updateModalBody");
 
-        const channelSel = document.getElementById("updateChannel");
-        if (data.channel) {
-          channelSel.value = data.channel;
-        }
-
-        let badgeHtml = "";
         if (!data.ok) {
-          badgeHtml = '<span class="badge badge-red">Error</span>';
-        } else if (data.update_available) {
-          badgeHtml = '<span class="badge badge-yellow">Update available</span>';
-        } else {
-          badgeHtml = '<span class="badge badge-green">Up to date</span>';
+          body.innerHTML = `<p class="error">Update check failed: ${data.error || "Unknown error"}</p>`;
+          return;
         }
 
-        info.innerHTML = `
-          <div class="status-row">
-            <span class="status-key">Channel</span>
-            <span class="status-value">${data.channel || "-"}</span>
-          </div>
-          <div class="status-row">
-            <span class="status-key">Current</span>
-            <span class="status-value">${data.local_version || "unknown"}</span>
-          </div>
-          <div class="status-row">
-            <span class="status-key">Latest</span>
-            <span class="status-value">${data.remote_version || "unknown"}</span>
-          </div>
-          <div class="status-row">
-            <span class="status-key">Status</span>
-            <span class="status-value">${badgeHtml}</span>
-          </div>
-          <div class="status-row">
-            <span class="status-key">Last check</span>
-            <span class="status-value">${data.checked_at || "-"}</span>
-          </div>
+        body.innerHTML = `
+          <p><strong>Channel:</strong> ${data.channel || "-"}</p>
+          <p><strong>Current version:</strong> ${data.local_version || "unknown"}</p>
+          <p><strong>Latest version:</strong> ${data.remote_version || "unknown"}</p>
+          <p><strong>Last checked:</strong> ${data.checked_at || "-"}</p>
+          <p style="margin-top:0.6rem;font-size:0.85rem;color:#aaa;">
+            Downloading the latest update stores a ZIP under <code>/data/updates</code>.<br/>
+            Apply updates on the host using your <code>update.sh</code> script.
+          </p>
         `;
-
-        if (!data.ok && data.error) {
-          statusEl.textContent = "⚠️ " + data.error;
-        } else {
-          statusEl.textContent = "";
-        }
       } catch (e) {
-        console.error("loadUpdateStatus failed", e);
-        info.innerHTML =
-          "<span class='error'>Failed to check update status</span>";
-        statusEl.textContent = "⚠️ Update check failed.";
-      }
-    }
-
-    async function changeUpdateChannel() {
-      const channelSel = document.getElementById("updateChannel");
-      const channel = channelSel.value;
-      const statusEl = document.getElementById("updateStatus");
-      statusEl.textContent = "Changing channel...";
-      updateLastOutput("Changing update channel to " + channel + "...");
-      try {
-        const res = await fetch("/api/update/channel", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ channel }),
-        });
-        const data = await res.json();
-        if (!res.ok || !data.ok) {
-          const msg = data.message || "Failed to change channel.";
-          statusEl.textContent = "❌ " + msg;
-          updateLastOutput(msg);
-        } else {
-          statusEl.textContent = "✅ " + (data.message || "Channel updated.");
-          updateLastOutput(data.message || "Channel updated.");
-          loadUpdateStatus();
-        }
-      } catch (e) {
-        const msg = "Error changing channel: " + e;
-        statusEl.textContent = "❌ " + msg;
-        updateLastOutput(msg);
+        document.getElementById("updateModalBody").innerHTML =
+          '<p class="error">Error loading update status.</p>';
         console.error(e);
       }
     }
 
     async function downloadUpdate() {
-      const statusEl = document.getElementById("updateStatus");
-      statusEl.textContent = "Downloading update...";
       updateLastOutput("Downloading latest update package...");
       try {
-        const res = await fetch("/api/update/download", {
-          method: "POST",
-        });
+        const res = await fetch("/api/update/download", { method: "POST" });
         const data = await res.json();
         if (!res.ok || !data.ok) {
-          const msg = data.message || "Update download failed.";
-          statusEl.textContent = "❌ " + msg;
-          updateLastOutput(msg);
+          updateLastOutput(data.message || "Update download failed.");
         } else {
-          const msg = data.message || "Update package downloaded.";
-          statusEl.textContent = "✅ " + msg;
-          updateLastOutput(msg);
-          loadUpdateStatus();
+          updateLastOutput(data.message || "Update package downloaded.");
         }
       } catch (e) {
-        const msg = "Update download error: " + e;
-        statusEl.textContent = "❌ " + msg;
-        updateLastOutput(msg);
+        updateLastOutput("Update download error: " + e);
         console.error(e);
       }
     }
 
-    // Initial load & refresh timers
+    // -------- Init --------
+
     loadStatus();
     loadBackups();
-    refreshDrive();
-    loadUpdateStatus();
-
     setInterval(loadStatus, 10000);
     setInterval(loadBackups, 60000);
-    setInterval(loadUpdateStatus, 60000);
   </script>
 </body>
 </html>

@@ -2,8 +2,8 @@ import os
 import subprocess
 from datetime import datetime
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request, UploadFile, File
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -13,7 +13,12 @@ from config_manager import load_config, save_config
 from backup import list_backups, run_backup, restore_backup
 from updater import update_os
 from driver_installer import install_coral_drivers
-from gdrive_sync import get_drive_status, upload_backup_to_drive
+from gdrive_sync import (
+    get_drive_status,
+    upload_backup_to_drive,
+    list_drive_backups,
+    save_token_json,
+)
 from self_updater import (
     get_update_status,
     set_update_channel,
@@ -34,6 +39,27 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="/app/static"), name="static")
 templates = Jinja2Templates(directory="/app/templates")
 
+RESTART_FLAG = "/data/restart_required"
+
+
+def get_system_hostname() -> str:
+    try:
+        result = subprocess.run(
+            ["hostnamectl", "--static"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:
+        pass
+    # Fallback to container hostname
+    try:
+        return os.uname().nodename
+    except Exception:
+        return "unknown"
+
 
 def get_os_version() -> str:
     try:
@@ -47,15 +73,38 @@ def get_os_version() -> str:
     return "Unknown OS"
 
 
-def get_frigate_version() -> str:
-    # Placeholder — could be extended to query Frigate's API / container label
-    return "not found"
+def get_frigate_status() -> bool:
+    try:
+        result = subprocess.run(
+            ["systemctl", "is-active", "frigate"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+        return result.stdout.strip() == "active"
+    except Exception:
+        return False
 
 
-def get_coral_status() -> str:
-    if os.path.exists("/dev/apex_0"):
-        return "Detected"
-    return "Not detected"
+def get_coral_status() -> bool:
+    return os.path.exists("/dev/apex_0")
+
+
+def is_restart_required() -> bool:
+    return os.path.exists(RESTART_FLAG)
+
+
+def set_restart_required(flag: bool):
+    try:
+        if flag:
+            os.makedirs(os.path.dirname(RESTART_FLAG), exist_ok=True)
+            with open(RESTART_FLAG, "w", encoding="utf-8") as f:
+                f.write(datetime.now().isoformat())
+        else:
+            if os.path.exists(RESTART_FLAG):
+                os.remove(RESTART_FLAG)
+    except Exception as e:
+        write_log("System", f"Failed to set restart flag: {e}")
 
 
 @app.get("/")
@@ -72,32 +121,98 @@ async def logs_page(request: Request):
 @app.get("/api/status")
 async def api_status():
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    hostname = os.uname().nodename
 
     system = {
+        "hostname": get_system_hostname(),
         "os": get_os_version(),
-        "frigate": get_frigate_version(),
-        "coral": get_coral_status(),
-        "hostname": hostname,
+        "frigate_ok": get_frigate_status(),
+        "coral_ok": get_coral_status(),
+        "restart_required": is_restart_required(),
     }
 
-    backup_state = {"time": timestamp, "state": "ok", "color": "#18b09f"}
-    update_state = {"time": timestamp, "state": "ok", "color": "#a1c349"}
-    rotation_state = {"time": timestamp, "state": "ok", "color": "#3cb8ff"}
+    cfg = load_config()
+    drive_status = get_drive_status()
+
+    update_info = get_update_status()
+    update_available = bool(update_info.get("update_available"))
+    update_channel = update_info.get("channel")
+    update_remote = update_info.get("remote_version")
+    update_local = update_info.get("local_version")
 
     return {
         "timestamp": timestamp,
         "system": system,
-        "backup": backup_state,
-        "update": update_state,
-        "rotation": rotation_state,
+        "drive": drive_status,
+        "update": {
+            "available": update_available,
+            "channel": update_channel,
+            "remote_version": update_remote,
+            "local_version": update_local,
+        },
     }
+
+
+# --------- Backup APIs ---------
 
 
 @app.get("/api/backups")
 async def api_list_backups():
-    files = list_backups()
-    return {"files": files}
+    """
+    Return structured backup info with optional Drive presence:
+    {
+      "files": [
+        {
+          "filename": "...",
+          "name": "frigate_config",
+          "timestamp": "2025-11-12 21:46:20",
+          "size_bytes": 123456,
+          "local": true,
+          "drive": true/false/"na"
+        }
+      ]
+    }
+    """
+    backups = list_backups()
+    cfg = load_config()
+    drive_enabled = bool(cfg.get("GDRIVE_ENABLED", False))
+
+    if drive_enabled and backups:
+        filenames = [b["filename"] for b in backups]
+        drive_index = list_drive_backups(filenames)
+    else:
+        drive_index = {}
+
+    for b in backups:
+        b["local"] = True
+        if not drive_enabled:
+            b["drive"] = "na"
+        else:
+            b["drive"] = bool(drive_index.get(b["filename"], False))
+
+    return {"files": backups}
+
+
+@app.get("/api/backups/download")
+async def api_download_backup(file: str):
+    """
+    Download a backup tar.gz by filename.
+    """
+    from pathlib import Path
+
+    safe_name = os.path.basename(file)
+    backup_path = os.path.join("/backups", safe_name)
+
+    if not os.path.exists(backup_path):
+        return JSONResponse(
+            {"ok": False, "message": "File not found"},
+            status_code=404,
+        )
+
+    return FileResponse(
+        backup_path,
+        media_type="application/gzip",
+        filename=safe_name,
+    )
 
 
 @app.post("/api/backup/run")
@@ -126,47 +241,75 @@ async def api_restore(request: Request):
         return JSONResponse({"ok": False, "error": msg, "message": msg}, status_code=400)
 
     success = restore_backup(filename)
-    msg = "Restore completed." if success else "Restore failed. Check logs."
+    if success:
+        set_restart_required(True)
+    msg = (
+        "Restore completed. Restart Frigate is recommended."
+        if success
+        else "Restore failed. Check logs."
+    )
     return {"ok": success, "message": msg}
+
+
+# --------- Google Drive config APIs ---------
 
 
 @app.get("/api/gdrive/status")
 async def api_gdrive_status():
-    cfg = load_config()
     status = get_drive_status()
-    status["enabled"] = cfg.get("GDRIVE_ENABLED", False)
     return status
 
 
-@app.get("/api/config")
-async def api_get_config():
-    cfg = load_config()
-    public = {
-        "BACKUP_PATHS": cfg.get("BACKUP_PATHS"),
-        "BACKUP_RETENTION": cfg.get("BACKUP_RETENTION"),
-        "GDRIVE_ENABLED": cfg.get("GDRIVE_ENABLED"),
-        "GDRIVE_TOKEN_PATH": cfg.get("GDRIVE_TOKEN_PATH"),
+@app.post("/api/gdrive/config")
+async def api_gdrive_config(request: Request):
+    """
+    Configure Google Drive:
+    body: {
+      "enabled": bool,
+      "token_json": "..."
     }
-    return public
-
-
-@app.post("/api/config")
-async def api_set_config(request: Request):
+    """
     body = await request.json()
-    cfg = load_config()
+    enabled = bool(body.get("enabled", False))
+    token_json = body.get("token_json")
 
-    if "GDRIVE_ENABLED" in body:
-        cfg["GDRIVE_ENABLED"] = bool(body["GDRIVE_ENABLED"])
-    if "GDRIVE_TOKEN_PATH" in body:
-        cfg["GDRIVE_TOKEN_PATH"] = str(body["GDRIVE_TOKEN_PATH"])
-    if "BACKUP_RETENTION" in body:
-        try:
-            cfg["BACKUP_RETENTION"] = int(body["BACKUP_RETENTION"])
-        except Exception:
-            pass
+    cfg = load_config()
+    cfg["GDRIVE_ENABLED"] = enabled
+
+    if token_json:
+        ok = save_token_json(token_json)
+        if not ok:
+            return JSONResponse(
+                {"ok": False, "message": "Failed to save token JSON."},
+                status_code=500,
+            )
 
     save_config(cfg)
-    return {"ok": True, "message": "Configuration updated."}
+    return {"ok": True, "message": "Google Drive configuration updated."}
+
+
+@app.post("/api/gdrive/upload_token")
+async def api_gdrive_upload_token(file: UploadFile = File(...)):
+    """
+    Upload a token.json file via multipart/form-data.
+    """
+    content = await file.read()
+    token_str = content.decode("utf-8")
+    ok = save_token_json(token_str)
+    if not ok:
+        return JSONResponse(
+            {"ok": False, "message": "Failed to save uploaded token file."},
+            status_code=500,
+        )
+
+    cfg = load_config()
+    cfg["GDRIVE_ENABLED"] = True
+    save_config(cfg)
+
+    return {"ok": True, "message": "Token uploaded and Drive enabled."}
+
+
+# --------- System / OS / Hostname / Drivers ---------
 
 
 @app.post("/api/system/update_os")
@@ -199,6 +342,8 @@ async def api_restart_frigate():
             msg = f"Frigate restart failed: {result.stderr}"
             return {"ok": False, "error": result.stderr, "message": msg}
         write_log("System", "Frigate restart command completed.")
+        # Clear restart-required flag on success
+        set_restart_required(False)
         return {"ok": True, "message": "Frigate restart command completed."}
     except Exception as e:
         write_log("System", f"Frigate restart exception: {e}")
@@ -284,7 +429,6 @@ async def api_update_status():
     Check update status against GitHub.
     """
     status = get_update_status()
-    # Always include channel from current config
     status["channel"] = get_update_channel()
     return status
 

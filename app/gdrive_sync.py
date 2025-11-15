@@ -1,134 +1,171 @@
 import os
-from typing import Optional
+from typing import Dict, Any, List
 
 from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
+from googleapiclient.errors import HttpError
 
 from logger import write_log
 from config_manager import load_config
 
 SCOPES = ["https://www.googleapis.com/auth/drive.file"]
-FOLDER_NAME = os.getenv("GDRIVE_FOLDER_NAME", "Frigate-Backups")
 
 
-def get_token_path() -> str:
+def _get_token_path() -> str:
     cfg = load_config()
     return cfg.get("GDRIVE_TOKEN_PATH", "/data/drive_token.json")
 
 
-def get_credentials() -> Optional[Credentials]:
-    token_path = get_token_path()
+def _is_enabled() -> bool:
+    cfg = load_config()
+    return bool(cfg.get("GDRIVE_ENABLED", False))
 
+
+def _get_drive_service():
+    if not _is_enabled():
+        raise RuntimeError("Google Drive sync is disabled in config.")
+
+    token_path = _get_token_path()
     if not os.path.exists(token_path):
-        write_log("Drive", f"Token file missing: {token_path}")
-        return None
-    if os.path.isdir(token_path):
-        write_log("Drive", f"Token path is a directory, not a file: {token_path}")
-        return None
+        raise FileNotFoundError(f"Token file not found: {token_path}")
 
-    try:
-        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-            with open(token_path, "w", encoding="utf-8") as f:
-                f.write(creds.to_json())
-            write_log("Drive", "Refreshed Google Drive credentials.")
-        return creds
-    except Exception as e:
-        write_log("Drive", f"Error loading credentials: {e}")
-        return None
+    creds = Credentials.from_authorized_user_file(token_path, SCOPES)
+    service = build("drive", "v3", credentials=creds, cache_discovery=False)
+    return service
 
 
-def get_drive_status() -> dict:
-    token_path = get_token_path()
+def get_drive_status() -> Dict[str, Any]:
+    """
+    For UI: returns {enabled, configured, email, token_path, message}
+    """
+    cfg = load_config()
+    enabled = _is_enabled()
+    token_path = _get_token_path()
+
+    if not enabled:
+        return {
+            "enabled": False,
+            "configured": os.path.exists(token_path),
+            "email": None,
+            "token_path": token_path,
+            "message": "Google Drive disabled",
+        }
 
     if not os.path.exists(token_path):
         return {
+            "enabled": True,
             "configured": False,
             "email": None,
             "token_path": token_path,
             "message": "Token file missing",
         }
 
-    if os.path.isdir(token_path):
-        return {
-            "configured": False,
-            "email": None,
-            "token_path": token_path,
-            "message": "Token path is a directory",
-        }
-
-    creds = get_credentials()
-    if not creds:
-        return {
-            "configured": False,
-            "email": None,
-            "token_path": token_path,
-            "message": "Invalid or expired credentials",
-        }
-
     try:
-        service = build("drive", "v3", credentials=creds)
+        service = _get_drive_service()
         about = service.about().get(fields="user(emailAddress)").execute()
         email = about.get("user", {}).get("emailAddress")
         return {
+            "enabled": True,
             "configured": True,
             "email": email,
             "token_path": token_path,
-            "message": "OK",
+            "message": "Connected",
         }
     except Exception as e:
-        write_log("Drive", f"Failed to fetch Drive status: {e}")
+        write_log("Drive", f"Drive status error: {e}")
         return {
+            "enabled": True,
             "configured": False,
             "email": None,
             "token_path": token_path,
-            "message": f"Drive access error: {e}",
+            "message": f"Error: {e}",
         }
 
 
-def _get_or_create_folder_id(service, folder_name: str) -> str:
-    q = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
-    res = service.files().list(
-        q=q, spaces="drive", fields="files(id,name)", pageSize=1
-    ).execute()
-    files = res.get("files", [])
-    if files:
-        return files[0]["id"]
-
-    folder = service.files().create(
-        body={"name": folder_name, "mimeType": "application/vnd.google-apps.folder"},
-        fields="id",
-    ).execute()
-    return folder["id"]
-
-
-def upload_backup_to_drive(file_path: str) -> bool:
-    if not os.path.exists(file_path):
-        write_log("Drive", f"Upload skipped — file not found: {file_path}")
+def upload_backup_to_drive(path: str) -> bool:
+    """
+    Upload a local backup tar.gz file to Google Drive.
+    Returns True on success, False on failure or if disabled.
+    """
+    if not _is_enabled():
+        write_log("Drive", "Upload requested but Drive is disabled.")
         return False
 
-    creds = get_credentials()
-    if not creds:
-        write_log("Drive", "Upload skipped — invalid or missing credentials.")
+    if not os.path.exists(path):
+        write_log("Drive", f"Upload failed: path not found: {path}")
         return False
 
+    filename = os.path.basename(path)
     try:
-        service = build("drive", "v3", credentials=creds)
-        folder_id = _get_or_create_folder_id(service, FOLDER_NAME)
-        metadata = {"name": os.path.basename(file_path), "parents": [folder_id]}
-        media = MediaFileUpload(file_path, mimetype="application/gzip")
+        service = _get_drive_service()
+        file_metadata = {"name": filename}
+        media = None
+        from googleapiclient.http import MediaFileUpload
 
-        service.files().create(
-            body=metadata,
-            media_body=media,
-            fields="id",
-        ).execute()
-
-        write_log("Drive", f"Uploaded {os.path.basename(file_path)} to Google Drive.")
+        media = MediaFileUpload(path, mimetype="application/gzip", resumable=True)
+        write_log("Drive", f"Uploading {filename} to Google Drive...")
+        created = (
+            service.files()
+            .create(body=file_metadata, media_body=media, fields="id")
+            .execute()
+        )
+        file_id = created.get("id")
+        write_log("Drive", f"Upload complete. File ID: {file_id}")
         return True
     except Exception as e:
-        write_log("Drive", f"Drive upload failed: {e}")
+        write_log("Drive", f"Upload failed: {e}")
         return False
+
+
+def save_token_json(token_json: str) -> bool:
+    """
+    Save raw token JSON string to token_path.
+    """
+    token_path = _get_token_path()
+    os.makedirs(os.path.dirname(token_path), exist_ok=True)
+    try:
+        with open(token_path, "w", encoding="utf-8") as f:
+            f.write(token_json.strip())
+        write_log("Drive", f"Token file written to {token_path}")
+        return True
+    except Exception as e:
+        write_log("Drive", f"Failed to write token file: {e}")
+        return False
+
+
+def list_drive_backups(local_filenames: List[str]) -> Dict[str, bool]:
+    """
+    Given a list of local backup filenames, returns a mapping:
+      { "filename.tar.gz": True/False }
+    indicating whether a file with that name exists in Drive.
+
+    If Drive is disabled or token invalid, returns {} and logs.
+    """
+    if not _is_enabled():
+        return {}
+
+    token_path = _get_token_path()
+    if not os.path.exists(token_path):
+        return {}
+
+    try:
+        service = _get_drive_service()
+        result: Dict[str, bool] = {}
+        for name in local_filenames:
+            # Query by exact name
+            q = f"name = '{name}' and trashed = false"
+            try:
+                resp = (
+                    service.files()
+                    .list(q=q, spaces="drive", fields="files(id,name)", pageSize=1)
+                    .execute()
+                )
+                files = resp.get("files", [])
+                result[name] = len(files) > 0
+            except HttpError as he:
+                write_log("Drive", f"Drive query error for {name}: {he}")
+                result[name] = False
+        return result
+    except Exception as e:
+        write_log("Drive", f"Drive index error: {e}")
+        return {}
