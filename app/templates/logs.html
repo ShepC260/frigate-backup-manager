@@ -203,6 +203,33 @@
     }
 
     init();
+
+    async function manualUpdateCheck() {
+      updateLastOutput("Manual update check requested...");
+
+      try {
+        const res = await fetch("/api/update/check_now", { method: "POST" });
+        const data = await res.json();
+
+        if (!res.ok || !data.ok) {
+          updateLastOutput("Update check failed: " + (data.error || "unknown error"));
+          alert("Update check failed: " + (data.error || "unknown"));
+          return;
+        }
+
+        updateLastOutput("Update check completed.");
+
+        // Refresh status panel
+        loadStatus();
+
+        // Optionally show modal
+        openUpdateModal();
+
+      } catch (e) {
+        updateLastOutput("Manual update check error: " + e);
+      }
+    }
+
   </script>
 </body>
 </html>

@@ -236,5 +236,9 @@ async function runSystemAction(action) {
 
 loadStatus();
 loadBackups();
-setInterval(loadStatus, 10000);
-setInterval(loadBackups, 60000);
+
+// Check system status every 5 minutes
+setInterval(loadStatus, 300000);
+
+// Refresh backups list every 5 minutes
+setInterval(loadBackups, 300000);

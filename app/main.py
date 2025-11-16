@@ -19,11 +19,13 @@ from gdrive_sync import (
     list_drive_backups,
     save_token_json,
 )
+
 from self_updater import (
     get_update_status,
     set_update_channel,
     get_update_channel,
     download_update,
+    force_update_check,
 )
 
 app = FastAPI(title="Frigate Backup Manager")
@@ -456,5 +458,15 @@ async def api_update_download():
     Does NOT apply the update; use update.sh on the host.
     """
     result = download_update()
+    code = 200 if result.get("ok") else 500
+    return JSONResponse(result, status_code=code)
+
+
+@app.post("/api/update/check_now")
+async def api_update_check_now():
+    """
+    Force a GitHub update check immediately (bypasses cache).
+    """
+    result = force_update_check()
     code = 200 if result.get("ok") else 500
     return JSONResponse(result, status_code=code)
